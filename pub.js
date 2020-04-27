@@ -1,6 +1,7 @@
 // MQTT publisher
 var mqtt = require('mqtt')
-var client = mqtt.connect('mqtt://Localhost:1883')
+//var client = mqtt.connect('mqtt://Localhost:1883')
+var client  = mqtt.connect('mqtt://test.mosquitto.org')
 var topic = 'cookies'
 var message = {
     title: 'title1',
