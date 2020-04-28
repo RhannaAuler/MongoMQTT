@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-mongoose.connect('mongodb://localhost:27017/testMQTT', {
+mongoose.connect('mongodb+srv://marinastavares:senha@cluster0-0uxwc.mongodb.net/test-MQTT?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useCreateIndex: true,
     useUnifiedTopology: true,

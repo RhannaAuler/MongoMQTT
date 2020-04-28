@@ -1,7 +1,6 @@
 // MQTT subscriber
 var mqtt = require('mqtt')
-//var client = mqtt.connect('mqtt://Localhost:1883')
-var client  = mqtt.connect('mqtt://test.mosquitto.org')
+var client  = mqtt.connect('mqtt://mqtt.eclipse.org/')
 var topic = 'cookies'
 
 require('./src/db/mongoose')
