@@ -1,16 +1,21 @@
 // MQTT subscriber
 var mqtt = require('mqtt')
 var client  = mqtt.connect('mqtt://mqtt.eclipse.org/')
-var topic = 'cookies'
+var topic = 'PI_mqtt'
 
-require('./src/db/mongoose')
+require('./src/database/mongoose')
 const MQTTdata = require('./src/models/dataMQTT')
 
 function updateModel(name, doc, newData) {
+    //console.log(doc.data)
     return MQTTdata.findOneAndUpdate(
         { name: name },
         { 
-            data: doc.data.concat(newData) //concatenando o que tinha em data com o novo valor
+            data:{
+                   dataV: doc.data.dataV.concat(newData.dataV), //concatenando o que tinha em data com o novo valor
+                   dataW: doc.data.dataW.concat(newData.dataW),
+                   dataA: doc.data.dataA.concat(newData.dataA)
+            }
         }
     )
 
@@ -31,7 +36,8 @@ client.on('message', (topic, message) => {
         MQTTdata
             .findOne({ name: messageMQTT.name }, 'data') // string no final sao os campos que vao aparecer no findone
             .then((doc) => {
-                console.log(doc)
+                // console.log('inside')
+                // console.log(doc)
                 if (doc == null){
                     return messageMQTT.save().then(() => {console.log('Novo')})
                 }
