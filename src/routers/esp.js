@@ -4,14 +4,17 @@ const router = new express.Router()
 
 // todos os dados
 router.get('/', async (req, res) => {
+
     try {
         const dados = await MQTTdata.find()
         return res.send(dados)
     } catch (e) {
         res.status(500).send()
     }
-    
+
+        
 })
+
 
 // nome dos labs
 router.get('/labs', async (req, res) => {
@@ -126,8 +129,6 @@ router.get('/grafico', async (req, res) => {
 
 
 
-
-
 // grafico com a soma das potencias por periodo/por hora
 
 router.get('/sum/hour', async (req, res) => {
@@ -164,10 +165,43 @@ router.get('/sum/hour', async (req, res) => {
 
 router.get('/peak_current', async (req, res) => {
 
+    const initialDate = (req.query.initialDate)
+    const finalDate = (req.query.finalDate)
+
+    if ((!req.query.initialDate) || (!req.query.finalDate)){
+        try {
+            const dados = await MQTTdata.aggregate(
+                [
+                    { $unwind: "$data.dataA"},
+                    { $sort: {'data.dataA.value': -1}},
+                    { $limit: 1},
+                    { $project: {
+                        _id: 0,
+                        name: 1,
+                        value: "$data.dataA.value",
+                        date: "$data.dataA.date"
+                    }}
+    
+                ]
+            )
+            return res.send(dados[0])
+        } catch (e) {
+            res.status(500).send()
+        }
+    }
+
     try {
         const dados = await MQTTdata.aggregate(
             [
                 { $unwind: "$data.dataA"},
+                {
+                    $match: {
+                        "data.dataA.date": {
+                            $gte: new Date(initialDate),
+                            $lte: new Date(finalDate)
+                        }
+                    }
+                },
                 { $sort: {'data.dataA.value': -1}},
                 { $limit: 1},
                 { $project: {
@@ -183,9 +217,41 @@ router.get('/peak_current', async (req, res) => {
     } catch (e) {
         res.status(500).send()
     }
+    
 });
 
+
+// ([{$project:{hour:{$hour:"$create_at"}}}, 
+//{$match:{hour:{"$in":[11,12]}}}])
+
 // grafico da potencia 24 hors por dia, x - horas, y - 7 graficos de cada dia da semana
+
+router.get('/pot_weekday', async (req, res) => {
+    
+    try {
+        const dados = await MQTTdata.aggregate(
+            [
+                { $unwind: "$data.dataW"},
+                {
+                    $group: {
+                        _id: {
+                                day: { $dayOfWeek: "$data.dataW.date" }, // 1 - domingo
+                                hour: { $hour: "$data.dataW.date" }
+                        },
+                        W_avg: {
+                            $avg: "$data.dataW.value"
+                        }
+                    }
+                }
+            ]
+        )
+        return res.send(dados)
+    } catch (e) {
+        res.status(500).send()
+    }
+});
+
+
 
 
 // gráfico pizza com a porcentagem de consumo cada fase
