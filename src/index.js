@@ -9,10 +9,12 @@ const MQTTdata = require('./models/dataMQTT')
 const espRouter = require('./routers/esp')
 
 const app = express()
+const port = process.env.PORT || 3000
+
 
 app.use(bodyParser.json()) // para entender quando mando json
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(espRouter)
 
 
-app.listen(3000)
+app.listen(port)
