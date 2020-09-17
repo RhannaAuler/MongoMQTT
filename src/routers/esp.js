@@ -221,9 +221,6 @@ router.get('/peak_current', async (req, res) => {
 });
 
 
-// ([{$project:{hour:{$hour:"$create_at"}}}, 
-//{$match:{hour:{"$in":[11,12]}}}])
-
 // grafico da potencia 24 hors por dia, x - horas, y - 7 graficos de cada dia da semana
 
 router.get('/pot_weekday', async (req, res) => {
@@ -255,10 +252,186 @@ router.get('/pot_weekday', async (req, res) => {
 
 
 // gráfico pizza com a porcentagem de consumo cada fase
+router.get('/energy/phase', async (req, res) => {
+
+    try {
+        const dados = await MQTTdata.aggregate(
+            [
+                { $unwind: "$data.dataE"},
+                {
+                    $group: {
+                        _id: null,
+                        totalEnergy: {
+                          $sum: "$data.dataE.value"
+                        },
+                        phase_dataE: {
+                          $push: {phase: "$data.dataE.phase", dataE: "$data.dataE"}
+                        }
+                      }
+                },
+                { $unwind: "$phase_dataE"},
+                {
+                    $group: {
+                    
+                            _id: {phase:"$phase_dataE.phase", total: "$totalEnergy"},
+                            sum_E: {
+                                 $sum: "$phase_dataE.dataE.value"
+                            }
+                    
+                    }
+                },
+                {
+                    $project:{
+                        _id: 0,
+                        phase: "$_id.phase",
+                        perc_E: {$round: [{$divide: ["$sum_E","$_id.total"]}, 2]}
+                    }
+                }
+            ]
+        )
+        return res.send(dados)
+    } catch (e) {
+        res.status(500).send()
+    }
+});
+
+
 // grafico pizza com porcentagem de energia de cada dispositivo em relacao ao total
-// graficco barras energia total y, dia da semana x
+
+router.get('/energy/lab', async (req, res) => {
+
+    try {
+        const dados = await MQTTdata.aggregate(
+            [
+                { $unwind: "$data.dataE"},
+                {
+                    $group: {
+                        _id: null,
+                        totalEnergy: {
+                          $sum: "$data.dataE.value"
+                        },
+                        name_dataE: {
+                          $push: {name: "$name", dataE: "$data.dataE"}
+                        }
+                      }
+                },
+                { $unwind: "$name_dataE"},
+                {
+                    $group: {
+                    
+                            _id: {name:"$name_dataE.name", total: "$totalEnergy"},
+                            sum_E: {
+                                 $sum: "$name_dataE.dataE.value"
+                            }
+                    
+                    }
+                },
+                {
+                    $project:{
+                        _id: 0,
+                        name: "$_id.name",
+                        perc_E: {$round: [{$divide: ["$sum_E","$_id.total"]}, 2]}
+                    }
+                }
+            ]
+        )
+        return res.send(dados)
+    } catch (e) {
+        res.status(500).send()
+    }
+});
+
+// grafico barras energia total y, dia da semana x
+router.get('/energy/dayOfWeek', async (req, res) => {
+
+    try {
+        const dados = await MQTTdata.aggregate(
+            [
+                { $unwind: "$data.dataE"},
+                {
+                    $group: {
+                        _id: { $dayOfWeek: "$data.dataE.date" }, // 1 - domingo,
+                        totalEnergy: {
+                          $sum: "$data.dataE.value"
+                        }
+                    
+                      }
+                }
+            ]
+        )
+        return res.send(dados)
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
 // gasto medio de energia 
+router.get('/energy/avg', async (req, res) => {
+
+    try {
+        const dados = await MQTTdata.aggregate(
+            [
+                { $unwind: "$data.dataE"},
+                {
+                    $group: {
+                        _id: null, 
+                        avgEnergy: {
+                          $avg: "$data.dataE.value"
+                        }
+                    }
+                },
+                {
+                    $project:{
+                        _id: 0,
+                        avgEnergy: 1
+                    }
+                }
+            ]
+        )
+        return res.send(dados)
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
 // energia total consumida por 1 mes
+router.get('/energy/total', async (req, res) => {
+
+    //monthData = new Date();
+    //monthData.setMonth(monthData.getMonth() - 1)
+
+    try {
+        const dados = await MQTTdata.aggregate(
+            [
+                { $unwind: "$data.dataE"},
+                {
+                    $match: {
+                        "data.dataE.date": {
+                            $gte: new Date(new Date().setMonth(new Date().getMonth() - 1 ) )
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null, 
+                        totalEnergyMonth: {
+                          $sum: "$data.dataE.value"
+                        }
+                    }
+                },
+                {
+                    $project:{
+                        _id: 0,
+                        totalEnergyMonth: 1
+                    }
+                }
+            ]
+        )
+        return res.send(dados)
+    } catch (e) {
+        res.status(500).send()
+    }
+})
 
 // SOMA DAS POTENCIAS
 

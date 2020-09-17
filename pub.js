@@ -10,31 +10,28 @@ var topic = 'PI_mqtt'
 
 var message = {
     name: 'LME',
-    data:
-      {
-        dataV: [
+    dataV: [
           {
             value: 221,
             date: Date.now(), //mandar data pelo esp para ter certeza que é certa
             phase: '1'
           },
         ],
-        dataW: [
+    dataW: [
           {
             value: 33,
             date: Date.now(), 
             phase: '1'
           },
         ],
-        dataA: [
+    dataA: [
           {
             value: 300,
             date: Date.now(), 
             phase: '1'
           },
         ]
-      }
-        
+       
 }
 
 client.on('connect', () => {

@@ -67,6 +67,22 @@ const MQTTdataSchema = new mongoose.Schema({
               },
             },
           ],
+          dataE: [  
+            {
+              value: {
+                type: Number,
+                required: true
+              },
+              date: {
+                type: Date,
+                default: Date.now
+              },
+              phase: {
+                type: String,
+                required: true
+              },
+            },
+          ],
         },
       active: {  // if this is just `true`, it doesnt error
         type: Boolean,

@@ -7,14 +7,15 @@ require('./src/database/mongoose')
 const MQTTdata = require('./src/models/dataMQTT')
 
 function updateModel(name, doc, newData) {
-    //console.log(doc.data)
+
     return MQTTdata.findOneAndUpdate(
         { name: name },
         { 
             data:{
                    dataV: doc.data.dataV.concat(newData.dataV), //concatenando o que tinha em data com o novo valor
                    dataW: doc.data.dataW.concat(newData.dataW),
-                   dataA: doc.data.dataA.concat(newData.dataA)
+                   dataA: doc.data.dataA.concat(newData.dataA),
+                   dataE: doc.data.dataE.concat(newData.dataE)
             }
         }
     )
@@ -26,11 +27,21 @@ client.on('message', (topic, message) => {
     console.log(message)
     if (message.includes('{') && !message.includes('mqtt')) {
         const data = JSON.parse(message)
-        console.log(data)
+        //console.log(data)
 
         const messageMQTT = new MQTTdata({
             name: data.name,
-            data: data.data,
+            data: {
+                dataV: data.dataV,
+                dataW: data.dataW,
+                dataA: data.dataA,
+                dataE: [{
+                    value: data.dataW[0].value/60000,
+                    date: data.dataW[0].date,
+                    phase: data.dataW[0].phase
+                }]
+            }
+            
         })
 
         MQTTdata
@@ -42,7 +53,7 @@ client.on('message', (topic, message) => {
                     return messageMQTT.save().then(() => {console.log('Novo')})
                 }
                 else{
-                    return updateModel(messageMQTT.name, doc, data.data).then(() => {console.log('Tudo bem')})
+                    return updateModel(messageMQTT.name, doc, messageMQTT.data).then(() => {console.log('Tudo bem')})
                 }
             }) 
             .catch((e) => {
