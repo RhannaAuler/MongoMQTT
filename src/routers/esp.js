@@ -15,7 +15,6 @@ router.get('/', async (req, res) => {
         
 })
 
-
 // nome dos labs
 router.get('/labs', async (req, res) => {
 
@@ -99,7 +98,6 @@ router.get('/last/:type', async (req, res) => {
     }
 })
 
-
 // grafico de todas as tensoes
 router.get('/grafico', async (req, res) => {
     try {
@@ -126,8 +124,6 @@ router.get('/grafico', async (req, res) => {
         res.status(500).send()
     }
 })
-
-
 
 // grafico com a soma das potencias por periodo/por hora
 
@@ -168,7 +164,7 @@ router.get('/peak_current', async (req, res) => {
     const initialDate = (req.query.initialDate)
     const finalDate = (req.query.finalDate)
 
-    if ((!req.query.initialDate) || (!req.query.finalDate)){
+    if (!initialDate || !finalDate){
         try {
             const dados = await MQTTdata.aggregate(
                 [
@@ -194,14 +190,7 @@ router.get('/peak_current', async (req, res) => {
         const dados = await MQTTdata.aggregate(
             [
                 { $unwind: "$data.dataA"},
-                {
-                    $match: {
-                        "data.dataA.date": {
-                            $gte: new Date(initialDate),
-                            $lte: new Date(finalDate)
-                        }
-                    }
-                },
+                match_date("data.dataA.date",initialDate,finalDate),
                 { $sort: {'data.dataA.value': -1}},
                 { $limit: 1},
                 { $project: {
@@ -219,7 +208,6 @@ router.get('/peak_current', async (req, res) => {
     }
     
 });
-
 
 // grafico da potencia 24 hors por dia, x - horas, y - 7 graficos de cada dia da semana
 
@@ -247,9 +235,6 @@ router.get('/pot_weekday', async (req, res) => {
         res.status(500).send()
     }
 });
-
-
-
 
 // gráfico pizza com a porcentagem de consumo cada fase
 router.get('/energy/phase', async (req, res) => {
@@ -295,48 +280,37 @@ router.get('/energy/phase', async (req, res) => {
     }
 });
 
-
 // grafico pizza com porcentagem de energia de cada dispositivo em relacao ao total
 
 router.get('/energy/lab', async (req, res) => {
 
+    const total = await total_energy()
     try {
         const dados = await MQTTdata.aggregate(
-            [
-                { $unwind: "$data.dataE"},
-                {
-                    $group: {
-                        _id: null,
-                        totalEnergy: {
-                          $sum: "$data.dataE.value"
-                        },
-                        name_dataE: {
-                          $push: {name: "$name", dataE: "$data.dataE"}
+        [
+            { $unwind: "$data.dataE"},
+            {
+                $group: {
+                
+                        _id: "$name",
+                        sum_E: {
+                            $sum: "$data.dataE.value"
                         }
-                      }
-                },
-                { $unwind: "$name_dataE"},
-                {
-                    $group: {
-                    
-                            _id: {name:"$name_dataE.name", total: "$totalEnergy"},
-                            sum_E: {
-                                 $sum: "$name_dataE.dataE.value"
-                            }
-                    
-                    }
-                },
-                {
-                    $project:{
-                        _id: 0,
-                        name: "$_id.name",
-                        perc_E: {$round: [{$divide: ["$sum_E","$_id.total"]}, 2]}
-                    }
+                
                 }
-            ]
-        )
-        return res.send(dados)
+            },
+            {
+                $project:{
+                    _id: 0,
+                    name: "$_id",
+                    perc_E: {$round: [{$divide: ["$sum_E",total]}, 2]}
+                }
+            }
+        ]
+    )
+    return res.send(dados)
     } catch (e) {
+        console.log(e)
         res.status(500).send()
     }
 });
@@ -396,9 +370,6 @@ router.get('/energy/avg', async (req, res) => {
 
 // energia total consumida por 1 mes
 router.get('/energy/total', async (req, res) => {
-
-    //monthData = new Date();
-    //monthData.setMonth(monthData.getMonth() - 1)
 
     try {
         const dados = await MQTTdata.aggregate(
@@ -511,3 +482,34 @@ router.get('/voltage', async (req, res) => {
 });
 
 module.exports = router
+
+
+// FUNÇÕES
+
+function match_date(field, initialDate,finalDate){
+    return {
+        $match: {
+            [field]: {
+                $gte: new Date(initialDate),
+                $lte: new Date(finalDate)
+            }
+        }
+    }
+}
+
+async function total_energy(){
+    const total_energy = await MQTTdata.aggregate(
+        [
+            { $unwind: "$data.dataE"},
+            {
+                $group: {
+                    _id: null,
+                    totalEnergy: {
+                      $sum: "$data.dataE.value"
+                    }
+                  }
+            }
+        ]
+    )
+    return total_energy[0].totalEnergy
+}

@@ -1,22 +1,22 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 
-const MQTTdataSchema = new mongoose.Schema({
-      name: {
+const dadosMedidosSchema = new mongoose.Schema({
+      id_DME: {
         type: String,
         required: true,
         lowercase: true,
-        trim: true
+        trim: true // remover espacos em branco da string
       },
-      description: String,
-      createdAt: {
-        type: Date,
-        default: Date.now
-      },
-      updatedAt: {
-        type: Date,
-        default: Date.now
-      },
+      //description: String,
+      // createdAt: {
+      //   type: Date,
+      //   default: Date.now
+      // },
+      // updatedAt: {
+      //   type: Date,
+      //   default: Date.now
+      // },
       data: 
         {  //data é um dicionário para as listas dataV, dataW e dataA
           dataV: [  //dataV é  a chave da lista
@@ -84,7 +84,7 @@ const MQTTdataSchema = new mongoose.Schema({
             },
           ],
         },
-      active: {  // if this is just `true`, it doesnt error
+      active: {  // habilitado ou desabilitado no frontend
         type: Boolean,
         default: true
       },
@@ -94,7 +94,7 @@ const MQTTdataSchema = new mongoose.Schema({
     }
 )
 
-const MQTTdata = mongoose.model('MQTTdata', MQTTdataSchema)
+const MQTTdata = mongoose.model('MQTTdata', dadosMedidosSchema)
 
 
 module.exports = MQTTdata

@@ -6,10 +6,10 @@ var topic = 'PI_mqtt'
 require('./src/database/mongoose')
 const MQTTdata = require('./src/models/dataMQTT')
 
-function updateModel(name, doc, newData) {
+function updateModel(id_DME, doc, newData) {
 
     return MQTTdata.findOneAndUpdate(
-        { name: name },
+        { id_DME: id_DME },
         { 
             data:{
                    dataV: doc.data.dataV.concat(newData.dataV), //concatenando o que tinha em data com o novo valor
@@ -30,13 +30,13 @@ client.on('message', (topic, message) => {
         //console.log(data)
 
         const messageMQTT = new MQTTdata({
-            name: data.name,
+            id_DME: data.id_DME,
             data: {
                 dataV: data.dataV,
                 dataW: data.dataW,
                 dataA: data.dataA,
                 dataE: [{
-                    value: data.dataW[0].value/60000,
+                    value: data.dataW[0].value/60000,  //amostragem a cada um minuto, convertendo de W para kWh
                     date: data.dataW[0].date,
                     phase: data.dataW[0].phase
                 }]
@@ -45,15 +45,13 @@ client.on('message', (topic, message) => {
         })
 
         MQTTdata
-            .findOne({ name: messageMQTT.name }, 'data') // string no final sao os campos que vao aparecer no findone
+            .findOne({ id_DME: messageMQTT.id_DME }, 'data') // string no final sao os campos que vao aparecer no findOne
             .then((doc) => {
-                // console.log('inside')
-                // console.log(doc)
-                if (doc == null){
-                    return messageMQTT.save().then(() => {console.log('Novo')})
-                }
-                else{
-                    return updateModel(messageMQTT.name, doc, messageMQTT.data).then(() => {console.log('Tudo bem')})
+                // if (doc == null){
+                //     return messageMQTT.save().then(() => {console.log('Novo')})
+                // }
+                if (doc != null){
+                    return updateModel(messageMQTT.id_DME, doc, messageMQTT.data).then(() => {console.log('ok')})
                 }
             }) 
             .catch((e) => {
