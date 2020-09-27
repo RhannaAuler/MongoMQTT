@@ -8,15 +8,6 @@ const dadosMedidosSchema = new mongoose.Schema({
         lowercase: true,
         trim: true // remover espacos em branco da string
       },
-      //description: String,
-      // createdAt: {
-      //   type: Date,
-      //   default: Date.now
-      // },
-      // updatedAt: {
-      //   type: Date,
-      //   default: Date.now
-      // },
       data: 
         {  //data é um dicionário para as listas dataV, dataW e dataA
           dataV: [  //dataV é  a chave da lista

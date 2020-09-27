@@ -1,5 +1,6 @@
 const express = require('express')
 const MQTTdata = require('../models/dataMQTT')
+const Ambiente = require('../models/ambiente')
 const router = new express.Router()
 
 // todos os dados
@@ -13,33 +14,6 @@ router.get('/', async (req, res) => {
     }
 
         
-})
-
-// nome dos labs
-router.get('/labs', async (req, res) => {
-
-    
-    try {
-        const dados = await MQTTdata.find({ }, { name: 1, _id: 0 })
-        return res.send(dados)
-    } catch (e) {
-        res.status(500).send()
-    }
-})
-
-// pegar dados de um especifico lab
-router.get('/labs/:lab', async (req, res) => {
-    const lab = req.params.lab
-
-    try {
-        const dados = await MQTTdata.find({name: lab})
-        if (!dados) {
-            res.status(404).send()
-        }
-        res.send(dados)
-    } catch(e) {
-        res.status(500).send()
-    }   
 })
 
 // ultima corrente/tensao/potencia de cada fase
@@ -74,6 +48,7 @@ router.get('/last/:type', async (req, res) => {
     }
 
     try {
+
         const last = await MQTTdata.aggregate(
             [
                 { $unwind: type_string},
@@ -81,7 +56,7 @@ router.get('/last/:type', async (req, res) => {
                 {
                     $group: {
                         _id: {
-                                name:"$name",
+                                id_DME:"$id_DME",
                                 phase:string_phase
                         },
                         value: {$last: string_value},
@@ -111,7 +86,7 @@ router.get('/grafico', async (req, res) => {
                 {
                     $project: {
                         _id: 0,
-                        name: 1,
+                        id_DME: 1,
                         value: "$data.dataV.value",
                         date: "$data.dataV.date"
                        
@@ -136,7 +111,7 @@ router.get('/sum/hour', async (req, res) => {
                 {
                     $group: {
                         _id: {
-                                name: "$name",
+                                id_DME: "$id_DME",
                                 year: { $year: "$data.dataW.date" },
                                 month: { $month: "$data.dataW.date" },
                                 day: { $dayOfMonth: "$data.dataW.date" },
@@ -173,7 +148,7 @@ router.get('/peak_current', async (req, res) => {
                     { $limit: 1},
                     { $project: {
                         _id: 0,
-                        name: 1,
+                        id_DME: 1,
                         value: "$data.dataA.value",
                         date: "$data.dataA.date"
                     }}
@@ -195,7 +170,7 @@ router.get('/peak_current', async (req, res) => {
                 { $limit: 1},
                 { $project: {
                     _id: 0,
-                    name: 1,
+                    id_DME: 1,
                     value: "$data.dataA.value",
                     date: "$data.dataA.date"
                 }}
@@ -292,7 +267,7 @@ router.get('/energy/lab', async (req, res) => {
             {
                 $group: {
                 
-                        _id: "$name",
+                        _id: "$id_DME",
                         sum_E: {
                             $sum: "$data.dataE.value"
                         }
@@ -302,7 +277,7 @@ router.get('/energy/lab', async (req, res) => {
             {
                 $project:{
                     _id: 0,
-                    name: "$_id",
+                    id_DME: "$_id",
                     perc_E: {$round: [{$divide: ["$sum_E",total]}, 2]}
                 }
             }
@@ -409,14 +384,34 @@ router.get('/energy/total', async (req, res) => {
 router.get('/sum', async (req, res) => {
 
     try {
-        const sum = await MQTTdata.aggregate(
-            [
-                { $unwind: "$data.dataW"},
+        const sum = await Ambiente.aggregate(
+            [{
+                $unwind: {
+                    path: "$pontosDeMedicao"
+                }
+            }, {
+                $project: {
+                    _id: "$pontosDeMedicao.id_DME",
+                    lab: "$slug",
+                    ponto: "$pontosDeMedicao.ponto"
+                }
+            }, {
+                $lookup: {
+                    from: 'mqttdatas',
+                    localField: '_id',
+                    foreignField: 'id_DME',
+                    as: 'dados'
+                }
+            },
+                {$unwind: "$dados"},
+                { $unwind: "$dados.data.dataW"},
                 {
                     $group: {
-                        _id: "$name",
+                        _id: "$dados.id_DME",
+                        lab: {$first:"$lab"},
+                        ponto: {$first:"$ponto"},
                         W_total: {
-                            $sum: "$data.dataW.value"
+                            $sum: "$dados.data.dataW.value"
                         }
                     }
                 }
@@ -424,6 +419,7 @@ router.get('/sum', async (req, res) => {
         )
         return res.send(sum)
     } catch (e) {
+        console.log(e)
         res.status(500).send()
     }
 });
@@ -461,7 +457,7 @@ router.get('/voltage', async (req, res) => {
                 { $unwind: "$data.dataV"},
                 {
                     $group: {
-                        _id: "$name",
+                        _id: "$id_DME",
                         V_avg: {
                             $avg: "$data.dataV.value"
                         }
