@@ -385,25 +385,8 @@ router.get('/sum', async (req, res) => {
 
     try {
         const sum = await Ambiente.aggregate(
-            [{
-                $unwind: {
-                    path: "$pontosDeMedicao"
-                }
-            }, {
-                $project: {
-                    _id: "$pontosDeMedicao.id_DME",
-                    lab: "$slug",
-                    ponto: "$pontosDeMedicao.ponto"
-                }
-            }, {
-                $lookup: {
-                    from: 'mqttdatas',
-                    localField: '_id',
-                    foreignField: 'id_DME',
-                    as: 'dados'
-                }
-            },
-                {$unwind: "$dados"},
+            [   
+                ...relacao(), //quebra as linhas de relacao
                 { $unwind: "$dados.data.dataW"},
                 {
                     $group: {
@@ -491,6 +474,33 @@ function match_date(field, initialDate,finalDate){
             }
         }
     }
+}
+
+function relacao(){
+    return [
+        {
+            $unwind: {
+                path: "$pontosDeMedicao"
+            }
+        }, 
+        {
+            $project: {
+                _id: "$pontosDeMedicao.id_DME",
+                lab: "$slug",
+                ponto: "$pontosDeMedicao.ponto"
+            }
+        }, 
+        {
+            $lookup: {
+                from: 'mqttdatas',
+                localField: '_id',
+                foreignField: 'id_DME',
+                as: 'dados'
+            }
+        },
+        {$unwind: "$dados"}
+        
+    ]
 }
 
 async function total_energy(){
