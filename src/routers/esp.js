@@ -309,16 +309,19 @@ router.get('/energy/lab', async (req, res) => {
 
     const total = await total_energy()
     try {
-        const dados = await MQTTdata.aggregate(
+        const dados = await Ambiente.aggregate(
         [
-            activeDME(),
-            { $unwind: "$data.dataE"},
+            ...connectAmbienteDME(),
+            activeDMEandAMB(),
+            { $unwind: "$dados.data.dataE"},
             {
                 $group: {
                 
-                        _id: "$id_DME",
+                        _id: "$dados.id_DME",
+                        lab: {$first:"$lab"},
+                        ponto: {$first:"$ponto"},
                         sum_E: {
-                            $sum: "$data.dataE.value"
+                            $sum: "$dados.data.dataE.value"
                         }
                 
                 }
@@ -326,7 +329,8 @@ router.get('/energy/lab', async (req, res) => {
             {
                 $project:{
                     _id: 0,
-                    id_DME: "$_id",
+                    lab: 1,
+                    ponto: 1,
                     perc_E: {$round: [{$divide: ["$sum_E",total]}, 2]}
                 }
             }
