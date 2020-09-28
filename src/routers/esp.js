@@ -7,7 +7,12 @@ const router = new express.Router()
 router.get('/', async (req, res) => {
 
     try {
-        const dados = await MQTTdata.find()
+        const dados = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+            ]
+        )
         return res.send(dados)
     } catch (e) {
         res.status(500).send()
@@ -20,28 +25,28 @@ router.get('/', async (req, res) => {
 router.get('/last/:type', async (req, res) => {
     const type = req.params.type
 
-    var type_string = "$data.dataA"
-    var string_date = "$data.dataA.date"
-    var string_phase = "$data.dataA.phase"
-    var string_value = "$data.dataA.value"
-    var sort_date = "data.dataA.date"
+    var type_string = "$dados.data.dataA"
+    var string_date = "$dados.data.dataA.date"
+    var string_phase = "$dados.data.dataA.phase"
+    var string_value = "$dados.data.dataA.value"
+    var sort_date = "dados.data.dataA.date"
 
     switch(type) {
 
         case 'V':
-            var type_string = "$data.dataV"
-            var string_date = "$data.dataV.date"
-            var string_phase = "$data.dataV.phase"
-            var string_value = "$data.dataV.value"
-            var sort_date = "data.dataV.date"
+            var type_string = "$dados.data.dataV"
+            var string_date = "$dados.data.dataV.date"
+            var string_phase = "$dados.data.dataV.phase"
+            var string_value = "$dados.data.dataV.value"
+            var sort_date = "dados.data.dataV.date"
             break
 
         case 'W':
-            var type_string = "$data.dataW"
-            var string_date = "$data.dataW.date"
-            var string_phase = "$data.dataW.phase"
-            var string_value = "$data.dataW.value"
-            var sort_date = "data.dataW.date"
+            var type_string = "$dados.data.dataW"
+            var string_date = "$dados.data.dataW.date"
+            var string_phase = "$dados.data.dataW.phase"
+            var string_value = "$dados.data.dataW.value"
+            var sort_date = "dados.data.dataW.date"
             break 
         default: 
         
@@ -49,26 +54,42 @@ router.get('/last/:type', async (req, res) => {
 
     try {
 
-        const last = await MQTTdata.aggregate(
+        const last = await Ambiente.aggregate(
             [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
                 { $unwind: type_string},
                 { $sort: {sort_date: 1}},
                 {
                     $group: {
                         _id: {
-                                id_DME:"$id_DME",
+                                id_DME:"$dados.id_DME",
                                 phase:string_phase
                         },
+                        lab: {$first:"$lab"},
+                        ponto: {$first:"$ponto"},
                         value: {$last: string_value},
                         date: {
                             $last: string_date
                         }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        id_DME: "$_id.id_DME",
+                        phase: "$_id.phase",
+                        lab: 1,
+                        ponto: 1,
+                        value: 1,
+                        date: 1
                     }
                 }
             ]
         )
         return res.send(last)
     } catch (e) {
+        console.log(e)
         res.status(500).send(e)
     }
 })
@@ -76,19 +97,23 @@ router.get('/last/:type', async (req, res) => {
 // grafico de todas as tensoes
 router.get('/grafico', async (req, res) => {
     try {
-        const dados = await MQTTdata.aggregate(
+        const dados = await Ambiente.aggregate(
             [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
                 { $unwind: {
-                    path: '$data.dataV',
+                    path: '$dados.data.dataV',
                     preserveNullAndEmptyArrays: false
                   }
                 },
                 {
                     $project: {
                         _id: 0,
-                        id_DME: 1,
-                        value: "$data.dataV.value",
-                        date: "$data.dataV.date"
+                        id_DME: "$dados.id_DME",
+                        lab: 1,
+                        ponto: 1,
+                        value: "$dados.data.dataV.value",
+                        date: "$dados.data.dataV.date"
                        
                     }
                 }
@@ -96,6 +121,7 @@ router.get('/grafico', async (req, res) => {
         )
         return res.send(dados)
     } catch (e) {
+        console.log(e)
         res.status(500).send()
     }
 })
@@ -105,22 +131,26 @@ router.get('/grafico', async (req, res) => {
 router.get('/sum/hour', async (req, res) => {
 
     try {
-        const sum = await MQTTdata.aggregate(
+        const sum = await Ambiente.aggregate(
             [
-                { $unwind: "$data.dataW"},
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                { $unwind: "$dados.data.dataW"},
                 {
                     $group: {
                         _id: {
-                                id_DME: "$id_DME",
-                                year: { $year: "$data.dataW.date" },
-                                month: { $month: "$data.dataW.date" },
-                                day: { $dayOfMonth: "$data.dataW.date" },
-                                hour: { $hour: "$data.dataW.date" },
+                                id_DME: "$dados.id_DME",
+                                year: { $year: "$dados.data.dataW.date" },
+                                month: { $month: "$dados.data.dataW.date" },
+                                day: { $dayOfMonth: "$dados.data.dataW.date" },
+                                hour: { $hour: "$dados.data.dataW.date" },
                                 //minute: { $minute: "$data.dataW.date" }
                                
                         },
+                        lab: {$first:"$lab"},
+                        ponto: {$first:"$ponto"},
                         w_total: {
-                            $sum: "$data.dataW.value"
+                            $sum: "$dados.data.dataW.value"
                         }
                     }
                 }
@@ -141,16 +171,20 @@ router.get('/peak_current', async (req, res) => {
 
     if (!initialDate || !finalDate){
         try {
-            const dados = await MQTTdata.aggregate(
+            const dados = await Ambiente.aggregate(
                 [
-                    { $unwind: "$data.dataA"},
-                    { $sort: {'data.dataA.value': -1}},
+                    ...connectAmbienteDME(),
+                    activeDMEandAMB(),
+                    { $unwind: "$dados.data.dataA"},
+                    { $sort: {'dados.data.dataA.value': -1}},
                     { $limit: 1},
                     { $project: {
                         _id: 0,
-                        id_DME: 1,
-                        value: "$data.dataA.value",
-                        date: "$data.dataA.date"
+                        id_DME: "$dados.id_DME",
+                        lab: 1,
+                        ponto: 1,
+                        value: "$dados.data.dataA.value",
+                        date: "$dados.data.dataA.date"
                     }}
     
                 ]
@@ -162,17 +196,21 @@ router.get('/peak_current', async (req, res) => {
     }
 
     try {
-        const dados = await MQTTdata.aggregate(
+        const dados = await Ambiente.aggregate(
             [
-                { $unwind: "$data.dataA"},
-                match_date("data.dataA.date",initialDate,finalDate),
-                { $sort: {'data.dataA.value': -1}},
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                { $unwind: "$dados.data.dataA"},
+                match_date("dados.data.dataA.date",initialDate,finalDate),
+                { $sort: {'dados.data.dataA.value': -1}},
                 { $limit: 1},
                 { $project: {
                     _id: 0,
-                    id_DME: 1,
-                    value: "$data.dataA.value",
-                    date: "$data.dataA.date"
+                        id_DME: "$dados.id_DME",
+                        lab: 1,
+                        ponto: 1,
+                        value: "$dados.data.dataA.value",
+                        date: "$dados.data.dataA.date"
                 }}
 
             ]
@@ -191,6 +229,7 @@ router.get('/pot_weekday', async (req, res) => {
     try {
         const dados = await MQTTdata.aggregate(
             [
+                activeDME(),
                 { $unwind: "$data.dataW"},
                 {
                     $group: {
@@ -201,6 +240,14 @@ router.get('/pot_weekday', async (req, res) => {
                         W_avg: {
                             $avg: "$data.dataW.value"
                         }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        day: "$_id.day",
+                        hour: "$_id.hour",
+                        W_avg:1
                     }
                 }
             ]
@@ -217,6 +264,7 @@ router.get('/energy/phase', async (req, res) => {
     try {
         const dados = await MQTTdata.aggregate(
             [
+                activeDME(),
                 { $unwind: "$data.dataE"},
                 {
                     $group: {
@@ -263,6 +311,7 @@ router.get('/energy/lab', async (req, res) => {
     try {
         const dados = await MQTTdata.aggregate(
         [
+            activeDME(),
             { $unwind: "$data.dataE"},
             {
                 $group: {
@@ -296,6 +345,7 @@ router.get('/energy/dayOfWeek', async (req, res) => {
     try {
         const dados = await MQTTdata.aggregate(
             [
+                activeDME(),
                 { $unwind: "$data.dataE"},
                 {
                     $group: {
@@ -320,6 +370,7 @@ router.get('/energy/avg', async (req, res) => {
     try {
         const dados = await MQTTdata.aggregate(
             [
+                activeDME(),
                 { $unwind: "$data.dataE"},
                 {
                     $group: {
@@ -337,7 +388,7 @@ router.get('/energy/avg', async (req, res) => {
                 }
             ]
         )
-        return res.send(dados)
+        return res.send(dados[0])
     } catch (e) {
         res.status(500).send()
     }
@@ -349,6 +400,7 @@ router.get('/energy/total', async (req, res) => {
     try {
         const dados = await MQTTdata.aggregate(
             [
+                activeDME(),
                 { $unwind: "$data.dataE"},
                 {
                     $match: {
@@ -373,7 +425,7 @@ router.get('/energy/total', async (req, res) => {
                 }
             ]
         )
-        return res.send(dados)
+        return res.send(dados[0])
     } catch (e) {
         res.status(500).send()
     }
@@ -386,7 +438,8 @@ router.get('/sum', async (req, res) => {
     try {
         const sum = await Ambiente.aggregate(
             [   
-                ...relacao(), //quebra as linhas de relacao
+                ...connectAmbienteDME(), // quebra as linhas de relacao
+                activeDMEandAMB(), 
                 { $unwind: "$dados.data.dataW"},
                 {
                     $group: {
@@ -413,6 +466,7 @@ router.get('/sum/day', async (req, res) => {
     try {
         const sum = await MQTTdata.aggregate(
             [
+                activeDME(),
                 { $unwind: "$data.dataW"},
                 {
                     $group: {
@@ -431,18 +485,22 @@ router.get('/sum/day', async (req, res) => {
 });
 
 
-
+// maior tensão média
 router.get('/voltage', async (req, res) => {
 
     try {
-        const dados = await MQTTdata.aggregate(
+        const dados = await Ambiente.aggregate(
             [
-                { $unwind: "$data.dataV"},
+                ...connectAmbienteDME(), 
+                activeDMEandAMB(), 
+                { $unwind: "$dados.data.dataV"},
                 {
                     $group: {
-                        _id: "$id_DME",
+                        _id: "$dados.id_DME",
+                        lab: {$first:"$lab"},
+                        ponto: {$first:"$ponto"},
                         V_avg: {
-                            $avg: "$data.dataV.value"
+                            $avg: "$dados.data.dataV.value"
                         }
                     }
                 },
@@ -465,6 +523,8 @@ module.exports = router
 
 // FUNÇÕES
 
+
+// função para filtrar período de tempo
 function match_date(field, initialDate,finalDate){
     return {
         $match: {
@@ -476,7 +536,27 @@ function match_date(field, initialDate,finalDate){
     }
 }
 
-function relacao(){
+// função para filtrar DMEs ativos
+function activeDMEandAMB(){
+    return {
+        $match: {
+            "dados.active": true
+        }
+    }
+} 
+
+// função para filtrar DMES ativos sem usar o 
+function activeDME(){
+    return {
+        $match: {
+            "active": true
+        }
+    }
+}
+
+// função que adiciona parte da query necessária para associar
+// ambiente com id_DME
+function connectAmbienteDME(){
     return [
         {
             $unwind: {
@@ -503,6 +583,8 @@ function relacao(){
     ]
 }
 
+
+// função que calcula o total de energia consumido
 async function total_energy(){
     const total_energy = await MQTTdata.aggregate(
         [
