@@ -65,7 +65,8 @@ const MQTTdata = require('./src/models/dataMQTT')
 // });
 
 MQTTdata.create({ 
-        id_DME: "12345678"
+        id_DME: "1gkj",
+        active: false
     }, function (err, small) {
         if (err) return handleError(err);
         console.log('oi')
