@@ -139,7 +139,7 @@ router.get('/sum/hour', async (req, res) => {
                 {
                     $group: {
                         _id: {
-                                id_DME: "$dados.id_DME",
+                                id_DME: "$dados.id_DME",  
                                 year: { $year: "$dados.data.dataW.date" },
                                 month: { $month: "$dados.data.dataW.date" },
                                 day: { $dayOfMonth: "$dados.data.dataW.date" },
@@ -268,32 +268,32 @@ router.get('/pot_weekday', async (req, res) => {
     }
 });
 
-// gráfico pizza com a porcentagem de consumo cada fase
-router.get('/energy/phase', async (req, res) => {
+// gráfico pizza com a porcentagem de potência cada fase
+router.get('/power/phase', async (req, res) => {
 
     try {
         const dados = await MQTTdata.aggregate(
             [
                 activeDME(),
-                { $unwind: "$data.dataE"},
+                { $unwind: "$data.dataW"},
                 {
                     $group: {
                         _id: null,
-                        totalEnergy: {
-                          $sum: "$data.dataE.value"
+                        totalW: {
+                          $sum: "$data.dataW.value"
                         },
-                        phase_dataE: {
-                          $push: {phase: "$data.dataE.phase", dataE: "$data.dataE"}
+                        phase_dataW: {
+                          $push: {phase: "$data.dataW.phase", dataW: "$data.dataW"}
                         }
                       }
                 },
-                { $unwind: "$phase_dataE"},
+                { $unwind: "$phase_dataW"},
                 {
                     $group: {
                     
-                            _id: {phase:"$phase_dataE.phase", total: "$totalEnergy"},
-                            sum_E: {
-                                 $sum: "$phase_dataE.dataE.value"
+                            _id: {phase:"$phase_dataW.phase", total: "$totalW"},
+                            sum_W: {
+                                 $sum: "$phase_dataW.dataW.value"
                             }
                     
                     }
@@ -302,7 +302,7 @@ router.get('/energy/phase', async (req, res) => {
                     $project:{
                         _id: 0,
                         phase: "$_id.phase",
-                        perc_E: {$round: [{$divide: ["$sum_E","$_id.total"]}, 2]}
+                        perc_W: {$round: [{$divide: ["$sum_W","$_id.total"]}, 2]}
                     }
                 }
             ]
