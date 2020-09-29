@@ -153,6 +153,16 @@ router.get('/sum/hour', async (req, res) => {
                             $sum: "$dados.data.dataW.value"
                         }
                     }
+                }, 
+                {
+                    $project:{
+                        _id: 0,
+                        w_total: 1,
+                        date: { $dateFromParts: { 'year' : "$_id.year", 'month' : "$_id.month", 'day': "$_id.day", 'hour' : "$_id.hour"  } },
+                        lab: 1,
+                        ponto: 1,
+
+                   }
                 }
             ]
         )
