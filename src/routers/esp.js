@@ -244,8 +244,11 @@ router.get('/pot_weekday', async (req, res) => {
                 {
                     $group: {
                         _id: {
-                                day: { $dayOfWeek: "$data.dataW.date" }, // 1 - domingo
-                                hour: { $hour: "$data.dataW.date" }
+                                dayOfWeek: { $dayOfWeek: "$data.dataW.date" }, // 1 - domingo
+                                hour: { $hour: "$data.dataW.date" },
+                                year: { $year: "$data.dataW.date" },
+                                month: { $month: "$data.dataW.date" },
+                                day: { $dayOfMonth: "$data.dataW.date" }
                         },
                         W_avg: {
                             $avg: "$data.dataW.value"
@@ -255,8 +258,8 @@ router.get('/pot_weekday', async (req, res) => {
                 {
                     $project: {
                         _id: 0,
-                        day: "$_id.day",
-                        hour: "$_id.hour",
+                        dayOfWeek: "$_id.dayOfWeek",
+                        date: { $dateFromParts: { 'year' : "$_id.year", 'month' : "$_id.month", 'day': "$_id.day", 'hour' : "$_id.hour"  } },
                         W_avg:1
                     }
                 }
@@ -367,8 +370,7 @@ router.get('/energy/dayOfWeek', async (req, res) => {
                         totalEnergy: {
                           $sum: "$data.dataE.value"
                         }
-                    
-                      }
+                    }
                 }
             ]
         )
