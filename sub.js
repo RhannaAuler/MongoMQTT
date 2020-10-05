@@ -6,6 +6,7 @@ var topic = 'PI_mqtt'
 require('./src/database/mongoose')
 const MQTTdata = require('./src/models/dataMQTT')
 
+const app = express()
 const port = process.env.PORT || 3000
 
 function updateModel(id_DME, doc, newData) {
