@@ -6,6 +6,8 @@ var topic = 'PI_mqtt'
 require('./src/database/mongoose')
 const MQTTdata = require('./src/models/dataMQTT')
 
+const port = process.env.PORT || 3000
+
 function updateModel(id_DME, doc, newData) {
 
     return MQTTdata.findOneAndUpdate(
@@ -64,3 +66,6 @@ client.on('message', (topic, message) => {
 client.on('connect', () => {
     client.subscribe(topic)
 })
+
+
+app.listen(port)
