@@ -9,26 +9,26 @@ var topic = 'PI_mqtt'
 // }
 
 var message = {
-    name: 'LME',
+    id_DME: '123456',
     dataV: [
           {
-            value: 221,
-            date: Date.now(), //mandar data pelo esp para ter certeza que é certa
-            phase: '1'
+            value: 220,
+            date: 1601419464000, //mandar data pelo esp para ter certeza que é certa
+            phase: '3'
           },
         ],
     dataW: [
           {
-            value: 33,
-            date: Date.now(), 
-            phase: '1'
+            value: 1150,
+            date: 1601419464000, 
+            phase: '3'
           },
         ],
     dataA: [
           {
-            value: 300,
-            date: Date.now(), 
-            phase: '1'
+            value: 12,
+            date: 1601419464000, 
+            phase: '3'
           },
         ]
        
