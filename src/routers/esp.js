@@ -235,12 +235,24 @@ router.get('/peak_current', async (req, res) => {
 // grafico da potencia 24 hors por dia, x - horas, y - 7 graficos de cada dia da semana
 
 router.get('/pot_weekday', async (req, res) => {
-    
+    const initial = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
+    const final = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
+    const initialDate = initial.setHours(-3,0,0,1)
+    const finalDate = final.setHours(20,59,59,999)
+
     try {
         const dados = await MQTTdata.aggregate(
             [
                 activeDME(),
                 { $unwind: "$data.dataW"},
+                {
+                    $match: {
+                        "data.dataW.date": {
+                            $gte: new Date(initialDate),
+                            $lte: new Date(finalDate)
+                        }
+                    }
+                },
                 {
                     $group: {
                         _id: {
@@ -267,6 +279,7 @@ router.get('/pot_weekday', async (req, res) => {
         )
         return res.send(dados)
     } catch (e) {
+        console.log(e)
         res.status(500).send()
     }
 });
@@ -358,12 +371,24 @@ router.get('/energy/lab', async (req, res) => {
 
 // grafico barras energia total y, dia da semana x
 router.get('/energy/dayOfWeek', async (req, res) => {
+    const initial = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
+    const final = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
+    const initialDate = initial.setHours(-3,0,0,1)
+    const finalDate = final.setHours(20,59,59,999)
 
     try {
         const dados = await MQTTdata.aggregate(
             [
                 activeDME(),
                 { $unwind: "$data.dataE"},
+                {
+                    $match: {
+                        "data.dataE.date": {
+                            $gte: new Date(initialDate),
+                            $lte: new Date(finalDate)
+                        }
+                    }
+                },
                 {
                     $group: {
                         _id: { $dayOfWeek: "$data.dataE.date" }, // 1 - domingo,
