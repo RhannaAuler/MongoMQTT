@@ -18,20 +18,26 @@ const router = new express.Router()
 
 
 // gráfico pizza com a porcentagem de potência cada fase
-router.get('/power/phase', async (req, res) => {
+router.get('/power/phase/:id_DME', async (req, res) => {
+    const id_DME = req.params.id_DME
 
-    const total = await total_power()
+
+    const total = await total_power_idDME(id_DME)
     try {
         const dados = await Ambiente.aggregate(
             [
                 ...connectAmbienteDME(),
                 activeDMEandAMB(),
+                {
+                    $match: {
+                        "dados.id_DME": id_DME
+                    }
+                },
                 { $unwind: "$dados.data.dataW"},
                 {
                     $group: {
                     
                         _id: { 
-                                id_DME: "$dados.id_DME",
                                 phase: "$dados.data.dataW.phase"
                         },
                         lab: {$first:"$lab"},
@@ -46,7 +52,6 @@ router.get('/power/phase', async (req, res) => {
                     $project:{
                         _id: 0,
                         phase: "$_id.phase",
-                        id_DME: "$_id.id_DME",
                         lab: 1,
                         ponto: 1,
                         perc_W: {$round: [{$divide: ["$sum_W",total]}, 2]}
@@ -56,14 +61,16 @@ router.get('/power/phase', async (req, res) => {
         )
         return res.send(dados)
     } catch (e) {
+        console.log(e)
         res.status(500).send()
     }
 });
 
 
 // ultima corrente/tensao/potencia de cada fase
-router.get('/last/:type', async (req, res) => {
+router.get('/last/:id_DME/:type', async (req, res) => {
     const type = req.params.type
+    const id_DME = req.params.id_DME
 
     var type_string = "$dados.data.dataA"
     var string_date = "$dados.data.dataA.date"
@@ -98,12 +105,17 @@ router.get('/last/:type', async (req, res) => {
             [
                 ...connectAmbienteDME(),
                 activeDMEandAMB(),
+                {
+                    $match: {
+                        "dados.id_DME": id_DME
+                    }
+                },
                 { $unwind: type_string},
-                { $sort: {sort_date: 1}},
+                //{ $sort: {sort_date: 1}},
                 {
                     $group: {
                         _id: {
-                                id_DME:"$dados.id_DME",
+                                //id_DME:"$dados.id_DME",
                                 phase:string_phase
                         },
                         lab: {$first:"$lab"},
@@ -117,7 +129,7 @@ router.get('/last/:type', async (req, res) => {
                 {
                     $project: {
                         _id: 0,
-                        id_DME: "$_id.id_DME",
+                        //id_DME: "$_id.id_DME",
                         phase: "$_id.phase",
                         lab: 1,
                         ponto: 1,
@@ -136,17 +148,32 @@ router.get('/last/:type', async (req, res) => {
 
 
 // grafico de todas as tensoes
-router.get('/grafico', async (req, res) => {
+router.get('/V/:id_DME', async (req, res) => {
+    const id_DME = req.params.id_DME
+    
+
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
+
     try {
         const dados = await Ambiente.aggregate(
             [
                 ...connectAmbienteDME(),
                 activeDMEandAMB(),
-                { $unwind: {
-                    path: '$dados.data.dataV',
-                    preserveNullAndEmptyArrays: false
-                  }
+                {
+                    $match: {
+                        "dados.id_DME": id_DME
+                    }
                 },
+                { $unwind: "$dados.data.dataV"},
+                match_date("dados.data.dataV.date",initialDate,finalDate),
                 {
                     $project: {
                         _id: 0,
@@ -155,7 +182,6 @@ router.get('/grafico', async (req, res) => {
                         ponto: 1,
                         value: "$dados.data.dataV.value",
                         date: "$dados.data.dataV.date"
-                       
                     }
                 }
             ]
@@ -166,61 +192,6 @@ router.get('/grafico', async (req, res) => {
         res.status(500).send()
     }
 })
-
-
-// SOMA DAS POTENCIAS
-
-router.get('/sum', async (req, res) => {
-
-    try {
-        const sum = await Ambiente.aggregate(
-            [   
-                ...connectAmbienteDME(), // quebra as linhas de relacao
-                activeDMEandAMB(), 
-                { $unwind: "$dados.data.dataW"},
-                {
-                    $group: {
-                        _id: "$dados.id_DME",
-                        lab: {$first:"$lab"},
-                        ponto: {$first:"$ponto"},
-                        W_total: {
-                            $sum: "$dados.data.dataW.value"
-                        }
-                    }
-                }
-            ]
-        )
-        return res.send(sum)
-    } catch (e) {
-        console.log(e)
-        res.status(500).send()
-    }
-});
-  
-
-//SOMA DAS POTENCIAS POR DIA EM UM DADO PERIODO
-router.get('/sum/day', async (req, res) => {
-
-    try {
-        const sum = await MQTTdata.aggregate(
-            [
-                activeDME(),
-                { $unwind: "$data.dataW"},
-                {
-                    $group: {
-                        _id: { day: { $dayOfYear: "$data.dataW.date"}, year: { $year: "$data.dataW.date" } },
-                        W_total: {
-                            $sum: "$data.dataW.value"
-                        }
-                    }
-                }
-            ]
-        )
-        return res.send(sum)
-    } catch (e) {
-        res.status(500).send()
-    }
-});
 
 
 
@@ -255,7 +226,7 @@ function activeDMEandAMB(){
     }
 } 
 
-// função para filtrar DMES ativos sem usar o 
+// função para filtrar DMES ativos sem usar o ambiente
 function activeDME(){
     return {
         $match: {
@@ -263,6 +234,7 @@ function activeDME(){
         }
     }
 }
+
 
 // função que adiciona parte da query necessária para associar
 // ambiente com id_DME
@@ -295,9 +267,14 @@ function connectAmbienteDME(){
 
 
 // função que calcula o total de energia consumido
-async function total_power(){
+async function total_power_idDME(id_DME){
     const total_power = await MQTTdata.aggregate(
         [
+            {
+                $match: {
+                    "id_DME": id_DME
+                }
+            },
             { $unwind: "$data.dataW"},
             {
                 $group: {

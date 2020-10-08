@@ -102,10 +102,8 @@ router.get('/peak_current', async (req, res) => {
 
 // grafico barras energia total y, dia da semana x
 router.get('/energy/dayOfWeek', async (req, res) => {
-    const initial = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
-    const final = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
-    const initialDate = initial.setHours(-3,0,0,1)
-    const finalDate = final.setHours(20,59,59,999)
+    const initialDate = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
+    const finalDate = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
 
     try {
         const dados = await MQTTdata.aggregate(
@@ -225,10 +223,9 @@ router.get('/sum/hour', async (req, res) => {
 
 // grafico da potencia 24 hors por dia, x - horas, y - 7 graficos de cada dia da semana
 router.get('/pot_weekday', async (req, res) => {
-    const initial = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
-    const final = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
-    const initialDate = initial.setHours(-3,0,0,1)
-    const finalDate = final.setHours(20,59,59,999)
+    const initialDate = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
+    const finalDate = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
+
 
     try {
         const dados = await MQTTdata.aggregate(
@@ -315,39 +312,6 @@ router.get('/energy/total', async (req, res) => {
     }
 })
 
-
-// maior tensão média
-router.get('/voltage', async (req, res) => {
-
-    try {
-        const dados = await Ambiente.aggregate(
-            [
-                ...connectAmbienteDME(), 
-                activeDMEandAMB(), 
-                { $unwind: "$dados.data.dataV"},
-                {
-                    $group: {
-                        _id: "$dados.id_DME",
-                        lab: {$first:"$lab"},
-                        ponto: {$first:"$ponto"},
-                        V_avg: {
-                            $avg: "$dados.data.dataV.value"
-                        }
-                    }
-                },
-                {
-                    $sort: { V_avg: -1 } // sort by avg_assessment descending
-                },
-                {
-                    $limit: 1 // only return one document
-                }
-            ]
-        )
-        return res.send(dados[0])
-    } catch (e) {
-        res.status(500).send()
-    }
-});
 
 
 
