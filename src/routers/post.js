@@ -70,4 +70,39 @@ router.post('/registro_ambiente', async (req, res) => {
      
 })
 
+
+// POST HABILITAR/DESABILITAR DMES
+
+router.post('/status_active', async (req, res) => {
+    const {id_DME} = req.body;
+    try {
+
+        if (await MQTTdata.findOne({id_DME: req.body.id_DME})){
+            console.log("Achou a ID_DME")
+
+
+            MQTTdata.findOne({id_DME: req.body.id_DME}, 'active') 
+                .then((doc) => {
+
+                    if (doc.active){//Se o doc.active == true
+                        console.log("Atualiza ponto de medição")
+                        return MQTTdata.findOneAndUpdate({id_DME: req.body.id_DME}, {active: false}); //Atualiza o status do 'active
+                    }
+                    else{//Se o doc.active == false
+                        return MQTTdata.findOneAndUpdate({id_DME: req.body.id_DME}, {active: true}); //Atualiza o status do 'active'
+                    }             
+                })
+                return res.send(req.body)
+            }
+        else{
+            console.log("Nao achou a ID_DME")
+            res.status(400).send({error: 'ID_DME não encontrada'})
+        }            
+
+    } catch (e) {
+        res.status(400).send({error: 'ID_DME não encontrada'})
+    }
+     
+})
+
 module.exports = router

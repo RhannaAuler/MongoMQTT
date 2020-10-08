@@ -6,33 +6,39 @@ const router = new express.Router()
 
 // GETS da pagina de modulo
 
+
+// mudar para /:id_DME
+
+// porcentagem de potencia de cada fase
+// ultimo valor lido da corrente 
+// ultimo valor lido da tensão
+// grafico para cada grandeza com uma curva para cada fase 
+// default: ultimas 24 horas
+
+
+
 // gráfico pizza com a porcentagem de potência cada fase
 router.get('/power/phase', async (req, res) => {
 
+    const total = await total_power()
     try {
-        const dados = await MQTTdata.aggregate(
+        const dados = await Ambiente.aggregate(
             [
-                activeDME(),
-                { $unwind: "$data.dataW"},
-                {
-                    $group: {
-                        _id: null,
-                        totalW: {
-                          $sum: "$data.dataW.value"
-                        },
-                        phase_dataW: {
-                          $push: {phase: "$data.dataW.phase", dataW: "$data.dataW"}
-                        }
-                      }
-                },
-                { $unwind: "$phase_dataW"},
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                { $unwind: "$dados.data.dataW"},
                 {
                     $group: {
                     
-                            _id: {phase:"$phase_dataW.phase", total: "$totalW"},
-                            sum_W: {
-                                 $sum: "$phase_dataW.dataW.value"
-                            }
+                        _id: { 
+                                id_DME: "$dados.id_DME",
+                                phase: "$dados.data.dataW.phase"
+                        },
+                        lab: {$first:"$lab"},
+                        ponto: {$first:"$ponto"},
+                        sum_W: {
+                                $sum: "$dados.data.dataW.value"
+                        }
                     
                     }
                 },
@@ -40,7 +46,10 @@ router.get('/power/phase', async (req, res) => {
                     $project:{
                         _id: 0,
                         phase: "$_id.phase",
-                        perc_W: {$round: [{$divide: ["$sum_W","$_id.total"]}, 2]}
+                        id_DME: "$_id.id_DME",
+                        lab: 1,
+                        ponto: 1,
+                        perc_W: {$round: [{$divide: ["$sum_W",total]}, 2]}
                     }
                 }
             ]
@@ -286,19 +295,19 @@ function connectAmbienteDME(){
 
 
 // função que calcula o total de energia consumido
-async function total_energy(){
-    const total_energy = await MQTTdata.aggregate(
+async function total_power(){
+    const total_power = await MQTTdata.aggregate(
         [
-            { $unwind: "$data.dataE"},
+            { $unwind: "$data.dataW"},
             {
                 $group: {
-                    _id: null,
-                    totalEnergy: {
-                      $sum: "$data.dataE.value"
+                    _id: "null",
+                    totalPower: {
+                      $sum: "$data.dataW.value"
                     }
                   }
             }
         ]
     )
-    return total_energy[0].totalEnergy
+    return total_power[0].totalPower
 }
