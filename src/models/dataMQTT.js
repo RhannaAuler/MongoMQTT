@@ -1,17 +1,38 @@
+// Requisao dos modulos NPM usados
+
 const mongoose = require('mongoose')
 const validator = require('validator')
+
+
+// Schema do MongoDB para armazenamento dos dados medidos pelo DME
 
 const dadosMedidosSchema = new mongoose.Schema({
       id_DME: {
         type: String,
-        required: true,
+        required: true, // é necessario colocar o id do DME
         lowercase: true,
-        trim: true,
-        unique: true // remover espacos em branco da string
+        trim: true, // remover espacos em branco da string
+        unique: true // id deve ser unico
       },
       data: 
         {  //data é um dicionário para as listas dataV, dataW e dataA
-          dataV: [  //dataV é  a chave da lista
+          dataV: [  //dataV é a chave da lista com valor, fase e tempo da ultima tensao
+            {
+              value: {  // valor medido
+                type: Number,
+                required: true
+              },
+              date: {  // data da medicao
+                type: Date,
+                default: Date.now
+              },
+              phase: {  // fase da medicao
+                type: String,
+                required: true
+              },
+            },
+          ],
+          dataW: [ // referente as potencias medidas
             {
               value: {
                 type: Number,
@@ -27,7 +48,7 @@ const dadosMedidosSchema = new mongoose.Schema({
               },
             },
           ],
-          dataW: [
+          dataA: [  // referente as correntes medidas
             {
               value: {
                 type: Number,
@@ -43,23 +64,7 @@ const dadosMedidosSchema = new mongoose.Schema({
               },
             },
           ],
-          dataA: [
-            {
-              value: {
-                type: Number,
-                required: true
-              },
-              date: {
-                type: Date,
-                default: Date.now
-              },
-              phase: {
-                type: String,
-                required: true
-              },
-            },
-          ],
-          dataE: [  
+          dataE: [  // referente a energia calculada
             {
               value: {
                 type: Number,
@@ -82,11 +87,13 @@ const dadosMedidosSchema = new mongoose.Schema({
       },
     },
     {
-      timestamps: true
+      timestamps: true  // ultima atualizao e data de criacao do dme
     }
 )
 
 const MQTTdata = mongoose.model('MQTTdata', dadosMedidosSchema)
 
 
-module.exports = MQTTdata
+// Exportando o modelo para uso em outros arquivos
+
+module.exports = MQTTdata 

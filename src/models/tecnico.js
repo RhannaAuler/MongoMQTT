@@ -1,24 +1,29 @@
+// Requisicao dos modulos NPM usados
+
 const mongoose = require('mongoose')
 const validator = require('validator')
 require('mongoose-type-email');
 
+
+// Schema para Tecnico
+
 const TecnicoSchema = new mongoose.Schema({
-      name: {
+      name: { // nome completo do tecnico
         type: String,
         required: true,
         lowercase: true,
         trim: true // remover espacos em branco da string
       },
-      email: {
-        type: mongoose.SchemaTypes.Email,
+      email: { // email para login e notificacoes
+        type: mongoose.SchemaTypes.Email, // modulo verifica se é um email
         required: true,
         lowercase: true
       },
-      password: {
+      password: {  // senha para login
         type: String,
         required: true,
       },
-      slugAmbiente:{ 
+      slugAmbiente:{  // ambiente do tecnico
         type: String,
         required: true,
         lowercase: true,

@@ -1,26 +1,28 @@
-const mongoose = require('mongoose')
-const validator = require('validator')
+const mongoose = require('mongoose')  // modulo mongoose
+const validator = require('validator') // modulo de validacao de dados
 
+// Schema para os Ambientes/Laboratorios
 const AmbienteSchema = new mongoose.Schema({
-      name: { // laboratorio
+      name: {   // nome do ambiente
         type: String,
         required: true,
         lowercase: true,
-        trim: true // remover espacos em branco da string
+        trim: true  // retira espacos em branco
       },
-      slug: { 
+      slug: {  // sigla do ambiente, ex: lmm
         type: String,
         required: true,
         lowercase: true,
-        trim: true 
+        trim: true,
+        unique: true  // sigla deve ser unica
       },
-      pontosDeMedicao: [ {
-        ponto: {
+      pontosDeMedicao: [ { // lista de pontos de medicao do ambiente
+        ponto: {   // nome do ponto
             type: String,
             required: true,
             lowercase: true
         },
-        id_DME: {
+        id_DME: {  // id do dme ligado ao ponto
             type: String,
             required: true,
             lowercase: true,
@@ -30,11 +32,12 @@ const AmbienteSchema = new mongoose.Schema({
       }]
     },
     {
-      timestamps: true
+      timestamps: true // data de atualizacao e criacao do ambiente
     }
 )
 
-const Ambiente = mongoose.model('Ambiente', AmbienteSchema)
+// Modelo do Ambiente
+const Ambiente = mongoose.model('Ambiente', AmbienteSchema) 
 
-
+// Exportando o modelo Ambiente para uso em outros arquivos
 module.exports = Ambiente

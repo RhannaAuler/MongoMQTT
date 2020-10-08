@@ -1,8 +1,29 @@
 const express = require('express')
-//const MQTTdata = require('../models/dataMQTT')
+const MQTTdata = require('../models/dataMQTT')
 const Ambiente = require('../models/ambiente')
 const router = new express.Router()
 
+
+// GETS gerais
+
+
+// todos os dados
+router.get('/', async (req, res) => {
+
+    try {
+        const dados = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+            ]
+        )
+        return res.send(dados)
+    } catch (e) {
+        res.status(500).send()
+    }
+
+        
+})
 
 // nome dos labs
 router.get('/labs', async (req, res) => {
@@ -30,5 +51,7 @@ router.get('/labs/:lab', async (req, res) => {
         res.status(500).send()
     }   
 })
+
+
 
 module.exports = router
