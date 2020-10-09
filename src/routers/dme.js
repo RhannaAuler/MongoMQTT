@@ -7,8 +7,7 @@ const router = new express.Router()
 // GETS da pagina de modulo
 
 
-// mudar para /:id_DME
-
+//  /:id_DME
 // porcentagem de potencia de cada fase
 // ultimo valor lido da corrente 
 // ultimo valor lido da tensão
@@ -17,140 +16,10 @@ const router = new express.Router()
 
 
 
-// gráfico pizza com a porcentagem de potência cada fase
-router.get('/power/phase/:id_DME', async (req, res) => {
+// ultima corrente e tensao de cada fase
+// e gráfico pizza com a porcentagem de potência cada fase
+router.get('/last/:id_DME', async (req, res) => {
     const id_DME = req.params.id_DME
-
-
-    const total = await total_power_idDME(id_DME)
-    try {
-        const dados = await Ambiente.aggregate(
-            [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
-                {
-                    $match: {
-                        "dados.id_DME": id_DME
-                    }
-                },
-                { $unwind: "$dados.data.dataW"},
-                {
-                    $group: {
-                    
-                        _id: { 
-                                phase: "$dados.data.dataW.phase"
-                        },
-                        lab: {$first:"$lab"},
-                        ponto: {$first:"$ponto"},
-                        sum_W: {
-                                $sum: "$dados.data.dataW.value"
-                        }
-                    
-                    }
-                },
-                {
-                    $project:{
-                        _id: 0,
-                        phase: "$_id.phase",
-                        lab: 1,
-                        ponto: 1,
-                        perc_W: {$round: [{$divide: ["$sum_W",total]}, 2]}
-                    }
-                }
-            ]
-        )
-        return res.send(dados)
-    } catch (e) {
-        console.log(e)
-        res.status(500).send()
-    }
-});
-
-
-// ultima corrente/tensao/potencia de cada fase
-router.get('/last/:id_DME/:type', async (req, res) => {
-    const type = req.params.type
-    const id_DME = req.params.id_DME
-
-    var type_string = "$dados.data.dataA"
-    var string_date = "$dados.data.dataA.date"
-    var string_phase = "$dados.data.dataA.phase"
-    var string_value = "$dados.data.dataA.value"
-    var sort_date = "dados.data.dataA.date"
-
-    switch(type) {
-
-        case 'V':
-            var type_string = "$dados.data.dataV"
-            var string_date = "$dados.data.dataV.date"
-            var string_phase = "$dados.data.dataV.phase"
-            var string_value = "$dados.data.dataV.value"
-            var sort_date = "dados.data.dataV.date"
-            break
-
-        case 'W':
-            var type_string = "$dados.data.dataW"
-            var string_date = "$dados.data.dataW.date"
-            var string_phase = "$dados.data.dataW.phase"
-            var string_value = "$dados.data.dataW.value"
-            var sort_date = "dados.data.dataW.date"
-            break 
-        default: 
-        
-    }
-
-    try {
-
-        const last = await Ambiente.aggregate(
-            [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
-                {
-                    $match: {
-                        "dados.id_DME": id_DME
-                    }
-                },
-                { $unwind: type_string},
-                //{ $sort: {sort_date: 1}},
-                {
-                    $group: {
-                        _id: {
-                                //id_DME:"$dados.id_DME",
-                                phase:string_phase
-                        },
-                        lab: {$first:"$lab"},
-                        ponto: {$first:"$ponto"},
-                        value: {$last: string_value},
-                        date: {
-                            $last: string_date
-                        }
-                    }
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        //id_DME: "$_id.id_DME",
-                        phase: "$_id.phase",
-                        lab: 1,
-                        ponto: 1,
-                        value: 1,
-                        date: 1
-                    }
-                }
-            ]
-        )
-        return res.send(last)
-    } catch (e) {
-        console.log(e)
-        res.status(500).send(e)
-    }
-})
-
-
-// grafico de todas as tensoes
-router.get('/V/:id_DME', async (req, res) => {
-    const id_DME = req.params.id_DME
-    
 
     if (!req.query.initialDate || !req.query.finalDate) {
         finalDate = new Date()
@@ -162,41 +31,292 @@ router.get('/V/:id_DME', async (req, res) => {
         finalDate = (req.query.finalDate)
     }
 
+
+
     try {
-        const dados = await Ambiente.aggregate(
+
+        const lastA = await Ambiente.aggregate(
             [
                 ...connectAmbienteDME(),
                 activeDMEandAMB(),
+                filterDME(id_DME),
+                { $unwind: "$dados.data.dataA"},
+                match_date("dados.data.dataA.date",initialDate,finalDate),
                 {
-                    $match: {
-                        "dados.id_DME": id_DME
+                    $group: {
+                        _id: {
+                                phase:"$dados.data.dataA.phase"
+                        },
+                        //lab: {$first:"$lab"},
+                        //ponto: {$first:"$ponto"},
+                        value: {$last: "$dados.data.dataA.value"},
+                        date: {
+                            $last:"$dados.data.dataA.date"
+                        }
                     }
                 },
+                {
+                    $project: {
+                        _id: 0,
+                        //id_DME: "$_id.id_DME",
+                        phase: "$_id.phase",
+                        //lab: 1,
+                        //ponto: 1,
+                        value: 1,
+                        date: 1
+                    }
+                }
+            ]
+        )
+
+        const lastV = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                filterDME(id_DME),
+                { $unwind: "$dados.data.dataV"},
+                match_date("dados.data.dataV.date",initialDate,finalDate),
+                {
+                    $group: {
+                        _id: {
+                                phase:"$dados.data.dataV.phase"
+                        },
+                        //lab: {$first:"$lab"},
+                        //ponto: {$first:"$ponto"},
+                        value: {$last: "$dados.data.dataV.value"},
+                        date: {
+                            $last:"$dados.data.dataV.date"
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        phase: "$_id.phase",
+                        //lab: 1,
+                        //ponto: 1,
+                        value: 1,
+                        date: 1
+                    }
+                }
+            ]
+        )
+
+        const total = await total_power_idDME(id_DME,initialDate,finalDate)
+
+        const perc = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                filterDME(id_DME),
+                { $unwind: "$dados.data.dataW"},
+                match_date("dados.data.dataW.date",initialDate,finalDate),
+                {
+                    $group: {
+                    
+                        _id: { 
+                                phase: "$dados.data.dataW.phase"
+                        },
+                        //lab: {$first:"$lab"},
+                        //ponto: {$first:"$ponto"},
+                        sum_W: {
+                                $sum: "$dados.data.dataW.value"
+                        }
+                    
+                    }
+                },
+                {
+                    $project:{
+                        _id: 0,
+                        phase: "$_id.phase",
+                        //lab: 1,
+                        //ponto: 1,
+                        perc_W: {$round: [{$divide: ["$sum_W",total]}, 2]}
+                    }
+                }
+            ]
+        )
+
+        return res.send(
+            {
+               "lastA": lastA,
+               "lastV": lastV,
+               "perc": perc
+        
+            }
+            
+        )
+    } catch (e) {
+        console.log(e)
+        res.status(500).send(e)
+    }
+})
+
+
+// grafico de todas as tensoes
+router.get('/V/:id_DME', async (req, res) => {
+    const id_DME = req.params.id_DME
+    
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
+
+    try {
+        const dadosV = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                filterDME(id_DME),
                 { $unwind: "$dados.data.dataV"},
                 match_date("dados.data.dataV.date",initialDate,finalDate),
                 {
                     $project: {
                         _id: 0,
-                        id_DME: "$dados.id_DME",
-                        lab: 1,
-                        ponto: 1,
-                        value: "$dados.data.dataV.value",
-                        date: "$dados.data.dataV.date"
+                        // id_DME: "$dados.id_DME",
+                        // lab: 1,
+                        // ponto: 1,
+                        valueV: "$dados.data.dataV.value",
+                        dateV: "$dados.data.dataV.date",
+
                     }
                 }
             ]
         )
-        return res.send(dados)
+
+        return res.send(dadosV)
     } catch (e) {
         console.log(e)
         res.status(500).send()
     }
 })
 
+// grafico de todas as energias
+router.get('/E/:id_DME', async (req, res) => {
+    const id_DME = req.params.id_DME
+    
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
 
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
 
+    try {
+        
+        const dadosE = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                filterDME(id_DME),
+                { $unwind: "$dados.data.dataE"},
+                match_date("dados.data.dataE.date",initialDate,finalDate),
+                {
+                    $project: {
+                        _id: 0,
+                        valueE: "$dados.data.dataE.value",
+                        dateE: "$dados.data.dataE.date",
 
+                    }
+                }
+            ]
+        )
+        return res.send(dadosE)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send()
+    }
+})
 
+// grafico de todas as correntes
+router.get('/A/:id_DME', async (req, res) => {
+    const id_DME = req.params.id_DME
+    
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
+
+    try {
+        
+        const dadosA = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                filterDME(id_DME),
+                { $unwind: "$dados.data.dataA"},
+                match_date("dados.data.dataA.date",initialDate,finalDate),
+                {
+                    $project: {
+                        _id: 0,
+                        valueA: "$dados.data.dataA.value",
+                        dateA: "$dados.data.dataA.date",
+
+                    }
+                }
+            ]
+        )
+        
+        return res.send(dadosA)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send()
+    }
+})
+
+// grafico de todas as potencias
+router.get('/W/:id_DME', async (req, res) => {
+    const id_DME = req.params.id_DME
+    
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
+
+    try {
+        
+        const dadosW = await Ambiente.aggregate(
+            [
+                ...connectAmbienteDME(),
+                activeDMEandAMB(),
+                filterDME(id_DME),
+                { $unwind: "$dados.data.dataW"},
+                match_date("dados.data.dataW.date",initialDate,finalDate),
+                {
+                    $project: {
+                        _id: 0,
+                        valueW: "$dados.data.dataW.value",
+                        dateW: "$dados.data.dataW.date",
+
+                    }
+                }
+            ]
+        )
+        
+        return res.send(dadosW)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send()
+    }
+})
 
 
 module.exports = router
@@ -226,11 +346,11 @@ function activeDMEandAMB(){
     }
 } 
 
-// função para filtrar DMES ativos sem usar o ambiente
-function activeDME(){
+// função para filtrar id_DME
+function filterDME(id_DME){
     return {
         $match: {
-            "active": true
+            "dados.id_DME": id_DME
         }
     }
 }
@@ -267,7 +387,7 @@ function connectAmbienteDME(){
 
 
 // função que calcula o total de energia consumido
-async function total_power_idDME(id_DME){
+async function total_power_idDME(id_DME,initialDate,finalDate){
     const total_power = await MQTTdata.aggregate(
         [
             {
@@ -276,6 +396,7 @@ async function total_power_idDME(id_DME){
                 }
             },
             { $unwind: "$data.dataW"},
+            match_date("data.dataW.date",initialDate,finalDate),
             {
                 $group: {
                     _id: "null",
@@ -286,5 +407,67 @@ async function total_power_idDME(id_DME){
             }
         ]
     )
-    return total_power[0].totalPower
+
+    if (total_power.length){
+        return total_power[0].totalPower
+    }
+    else{
+        return null
+    }
 }
+
+
+// gráfico pizza com a porcentagem de potência cada fase
+//router.get('/power/phase/:id_DME', async (req, res) => {
+    // const id_DME = req.params.id_DME
+
+    // if (!req.query.initialDate || !req.query.finalDate) {
+    //     finalDate = new Date()
+    //     initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    // }
+
+    // else{
+    //     initialDate = (req.query.initialDate)
+    //     finalDate = (req.query.finalDate)
+    // }
+
+    // const total = await total_power_idDME(id_DME)
+    // try {
+    //     const dados = await Ambiente.aggregate(
+    //         [
+    //             ...connectAmbienteDME(),
+    //             activeDMEandAMB(),
+    //             filterDME(id_DME),
+    //             { $unwind: "$dados.data.dataW"},
+    //             match_date("dados.data.dataW.date",initialDate,finalDate),
+    //             {
+    //                 $group: {
+                    
+    //                     _id: { 
+    //                             phase: "$dados.data.dataW.phase"
+    //                     },
+    //                     lab: {$first:"$lab"},
+    //                     ponto: {$first:"$ponto"},
+    //                     sum_W: {
+    //                             $sum: "$dados.data.dataW.value"
+    //                     }
+                    
+    //                 }
+    //             },
+    //             {
+    //                 $project:{
+    //                     _id: 0,
+    //                     phase: "$_id.phase",
+    //                     lab: 1,
+    //                     ponto: 1,
+    //                     perc_W: {$round: [{$divide: ["$sum_W",total]}, 2]}
+    //                 }
+    //             }
+    //         ]
+    //     )
+    //     return res.send(dados)
+    // } catch (e) {
+    //     console.log(e)
+    //     res.status(500).send()
+    // }
+//});
