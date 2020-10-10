@@ -178,9 +178,7 @@ router.get('/V/:id_DME', async (req, res) => {
                 {
                     $project: {
                         _id: 0,
-                        // id_DME: "$dados.id_DME",
-                        // lab: 1,
-                        // ponto: 1,
+                        phaseV: "$dados.data.dataV.phase",
                         valueV: "$dados.data.dataV.value",
                         dateV: "$dados.data.dataV.date",
 
@@ -222,6 +220,7 @@ router.get('/E/:id_DME', async (req, res) => {
                 {
                     $project: {
                         _id: 0,
+                        phaseE: "$dados.data.dataE.phase",
                         valueE: "$dados.data.dataE.value",
                         dateE: "$dados.data.dataE.date",
 
@@ -262,6 +261,7 @@ router.get('/A/:id_DME', async (req, res) => {
                 {
                     $project: {
                         _id: 0,
+                        phaseA: "$dados.data.dataA.phase",
                         valueA: "$dados.data.dataA.value",
                         dateA: "$dados.data.dataA.date",
 
@@ -303,6 +303,7 @@ router.get('/W/:id_DME', async (req, res) => {
                 {
                     $project: {
                         _id: 0,
+                        phaseW: "$dados.data.dataW.phase",
                         valueW: "$dados.data.dataW.value",
                         dateW: "$dados.data.dataW.date",
 
@@ -320,6 +321,7 @@ router.get('/W/:id_DME', async (req, res) => {
 
 
 module.exports = router
+
 
 
 // FUNÇÕES
