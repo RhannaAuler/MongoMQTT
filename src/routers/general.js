@@ -53,6 +53,36 @@ router.get('/labs/:lab', async (req, res) => {
 })
 
 
+// Lista de ponto de medição dos suas respectivas slugs e ID_DME
+
+router.get('/Lista/DME_Ambiente_PontoMedicao', async (req, res) => {
+    
+
+    try {
+
+        //console.log("Entrou no try")
+        const Lista = await Ambiente.aggregate(
+            [  
+                ...connectAmbienteDME(), // Todas as informações dessa função ficam dentro do agregate e podem ser referenciadas dentro do $project em seguida
+                activeDMEandAMB(), 
+                {
+                    $project: { // mostra as informacoes que eu quero
+                        _id: 0,
+                        ponto: "$ponto", // Mostra ponto de medição da funcao connectAmbienteDME
+                        lab: "$lab", // Mostra Lab da funcao connectAmbienteDME
+                        Id_DME: "$_id", // Mostra ID_DME da funcao connectAmbienteDME
+                    }
+                }
+            ]
+        )
+        return res.send(Lista)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send()
+    }
+
+})
+
 
 
 
@@ -149,3 +179,45 @@ router.get('/voltage', async (req, res) => {
 
 
 module.exports = router
+
+
+// FUNÇÕES
+
+// função para filtrar DMEs ativos
+function activeDMEandAMB(){
+    return {
+        $match: {
+            "dados.active": true
+        }
+    }
+} 
+
+
+// função que adiciona parte da query necessária para associar
+// ambiente com id_DME
+function connectAmbienteDME(){
+    return [
+        {
+            $unwind: {
+                path: "$pontosDeMedicao"
+            }
+        }, 
+        {
+            $project: {
+                _id: "$pontosDeMedicao.id_DME",
+                lab: "$slug",
+                ponto: "$pontosDeMedicao.ponto"
+            }
+        }, 
+        {
+            $lookup: {
+                from: 'mqttdatas',
+                localField: '_id',
+                foreignField: 'id_DME',
+                as: 'dados'
+            }
+        },
+        {$unwind: "$dados"}
+        
+    ]
+}
