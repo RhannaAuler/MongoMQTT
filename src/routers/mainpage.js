@@ -12,11 +12,22 @@ const router = new express.Router()
 // gasto medio de energia 
 router.get('/energy/avg', async (req, res) => {
 
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
+
     try {
         const dados = await MQTTdata.aggregate(
             [
                 activeDME(),
                 { $unwind: "$data.dataE"},
+                match_date("data.dataE.date",initialDate,finalDate),
                 {
                     $group: {
                         _id: null, 
@@ -43,33 +54,14 @@ router.get('/energy/avg', async (req, res) => {
 // pico da corrente
 router.get('/peak_current', async (req, res) => {
 
-    const initialDate = (req.query.initialDate)
-    const finalDate = (req.query.finalDate)
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
 
-    if (!initialDate || !finalDate){
-        try {
-            const dados = await Ambiente.aggregate(
-                [
-                    ...connectAmbienteDME(),
-                    activeDMEandAMB(),
-                    { $unwind: "$dados.data.dataA"},
-                    { $sort: {'dados.data.dataA.value': -1}},
-                    { $limit: 1},
-                    { $project: {
-                        _id: 0,
-                        id_DME: "$dados.id_DME",
-                        lab: 1,
-                        ponto: 1,
-                        value: "$dados.data.dataA.value",
-                        date: "$dados.data.dataA.date"
-                    }}
-    
-                ]
-            )
-            return res.send(dados[0])
-        } catch (e) {
-            res.status(500).send()
-        }
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
     }
 
     try {
@@ -102,8 +94,16 @@ router.get('/peak_current', async (req, res) => {
 
 // grafico barras energia total y, dia da semana x
 router.get('/energy/dayOfWeek', async (req, res) => {
-    const initialDate = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
-    const finalDate = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
+
+    if (!req.query.initialDate || !req.query.finalDate) {
+        initialDate = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
+        finalDate = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
 
     try {
         const dados = await MQTTdata.aggregate(
@@ -138,13 +138,24 @@ router.get('/energy/dayOfWeek', async (req, res) => {
 // grafico pizza com porcentagem de energia de cada dispositivo em relacao ao total
 router.get('/energy/lab', async (req, res) => {
 
-    const total = await total_energy()
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
+
+    const total = await total_energy(initialDate,finalDate)
     try {
         const dados = await Ambiente.aggregate(
         [
             ...connectAmbienteDME(),
             activeDMEandAMB(),
             { $unwind: "$dados.data.dataE"},
+            match_date("dados.data.dataE.date",initialDate,finalDate),
             {
                 $group: {
                 
@@ -177,6 +188,15 @@ router.get('/energy/lab', async (req, res) => {
 
 // grafico com a soma das potencias por periodo/por hora
 router.get('/sum/hour', async (req, res) => {
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date() - 24*60*60 * 1000 )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
 
     try {
         const sum = await Ambiente.aggregate(
@@ -184,6 +204,7 @@ router.get('/sum/hour', async (req, res) => {
                 ...connectAmbienteDME(),
                 activeDMEandAMB(),
                 { $unwind: "$dados.data.dataW"},
+                match_date("dados.data.dataW.date",initialDate,finalDate),
                 {
                     $group: {
                         _id: {
@@ -223,8 +244,16 @@ router.get('/sum/hour', async (req, res) => {
 
 // grafico da potencia 24 hors por dia, x - horas, y - 7 graficos de cada dia da semana
 router.get('/pot_weekday', async (req, res) => {
-    const initialDate = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
-    const finalDate = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
+
+    if (!req.query.initialDate || !req.query.finalDate) {
+        initialDate = new Date(new Date() - 7 * 60 * 60 * 24 * 1000)
+        finalDate = new Date(new Date() - 1 * 60 * 60 * 24 * 1000)
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
 
 
     try {
@@ -278,18 +307,22 @@ router.get('/pot_weekday', async (req, res) => {
 // energia total consumida por 1 mes
 router.get('/energy/total', async (req, res) => {
 
+    if (!req.query.initialDate || !req.query.finalDate) {
+        finalDate = new Date()
+        initialDate = new Date(new Date().setMonth(new Date().getMonth() - 1 ) )
+    }
+
+    else{
+        initialDate = (req.query.initialDate)
+        finalDate = (req.query.finalDate)
+    }
+    
     try {
         const dados = await MQTTdata.aggregate(
             [
                 activeDME(),
                 { $unwind: "$data.dataE"},
-                {
-                    $match: {
-                        "data.dataE.date": {
-                            $gte: new Date(new Date().setMonth(new Date().getMonth() - 1 ) )
-                        }
-                    }
-                },
+                match_date("data.dataE.date", initialDate,finalDate),
                 {
                     $group: {
                         _id: null, 
@@ -383,10 +416,11 @@ function connectAmbienteDME(){
 
 
 // função que calcula o total de energia consumido
-async function total_energy(){
+async function total_energy(initialDate,finalDate){
     const total_energy = await MQTTdata.aggregate(
         [
             { $unwind: "$data.dataE"},
+            match_date("data.dataE.date",initialDate,finalDate),
             {
                 $group: {
                     _id: null,
