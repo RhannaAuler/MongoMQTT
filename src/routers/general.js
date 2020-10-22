@@ -28,12 +28,11 @@ router.get('/', async (req, res) => {
 // nome dos labs
 router.get('/labs', async (req, res) => {
 
-    
     try {
         const dados = await Ambiente.find({ }, { name: 1, slug: 1, _id: 0 })
-        return res.send(dados)
-    } catch (e) {
-        res.status(500).send()
+        return res.send(dados) // envia dados encontrados como resposta
+    } catch (e) { 
+        res.status(500).send() // envia o erro
     }
 })
 

@@ -35,23 +35,26 @@ router.get('/last/:id_DME', async (req, res) => {
 
     try {
 
-        const lastA = await Ambiente.aggregate(
+        const lastA = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
-                filterDME(id_DME),
-                { $unwind: "$dados.data.dataA"},
-                match_date("dados.data.dataA.date",initialDate,finalDate),
+                activeDME(),
+                {
+                    $match: {
+                        "id_DME": id_DME
+                    }
+                },
+                { $unwind: "$data.dataA"},
+                match_date("data.dataA.date",initialDate,finalDate),
                 {
                     $group: {
                         _id: {
-                                phase:"$dados.data.dataA.phase"
+                                phase:"$data.dataA.phase"
                         },
                         //lab: {$first:"$lab"},
                         //ponto: {$first:"$ponto"},
-                        value: {$last: "$dados.data.dataA.value"},
+                        value: {$last: "$data.dataA.value"},
                         date: {
-                            $last:"$dados.data.dataA.date"
+                            $last:"$data.dataA.date"
                         }
                     }
                 },
@@ -69,23 +72,26 @@ router.get('/last/:id_DME', async (req, res) => {
             ]
         )
 
-        const lastV = await Ambiente.aggregate(
+        const lastV = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
-                filterDME(id_DME),
-                { $unwind: "$dados.data.dataV"},
-                match_date("dados.data.dataV.date",initialDate,finalDate),
+                activeDME(),
+                {
+                    $match: {
+                        "id_DME": id_DME
+                    }
+                },
+                { $unwind: "$data.dataV"},
+                match_date("data.dataV.date",initialDate,finalDate),
                 {
                     $group: {
                         _id: {
-                                phase:"$dados.data.dataV.phase"
+                                phase:"$data.dataV.phase"
                         },
                         //lab: {$first:"$lab"},
                         //ponto: {$first:"$ponto"},
-                        value: {$last: "$dados.data.dataV.value"},
+                        value: {$last: "$data.dataV.value"},
                         date: {
-                            $last:"$dados.data.dataV.date"
+                            $last:"$data.dataV.date"
                         }
                     }
                 },
@@ -104,23 +110,26 @@ router.get('/last/:id_DME', async (req, res) => {
 
         const total = await total_power_idDME(id_DME,initialDate,finalDate)
 
-        const perc = await Ambiente.aggregate(
+        const perc = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
-                filterDME(id_DME),
-                { $unwind: "$dados.data.dataW"},
-                match_date("dados.data.dataW.date",initialDate,finalDate),
+                activeDME(),
+                {
+                    $match: {
+                        "id_DME": id_DME
+                    }
+                },
+                { $unwind: "$data.dataW"},
+                match_date("data.dataW.date",initialDate,finalDate),
                 {
                     $group: {
                     
                         _id: { 
-                                phase: "$dados.data.dataW.phase"
+                                phase: "$data.dataW.phase"
                         },
                         //lab: {$first:"$lab"},
                         //ponto: {$first:"$ponto"},
                         sum_W: {
-                                $sum: "$dados.data.dataW.value"
+                                $sum: "$data.dataW.value"
                         }
                     
                     }
@@ -168,19 +177,18 @@ router.get('/V/:id_DME', async (req, res) => {
     }
 
     try {
-        const dadosV = await Ambiente.aggregate(
+        const dadosV = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
+                activeDME(),
                 filterDME(id_DME),
-                { $unwind: "$dados.data.dataV"},
-                match_date("dados.data.dataV.date",initialDate,finalDate),
+                { $unwind: "$data.dataV"},
+                match_date("data.dataV.date",initialDate,finalDate),
                 {
                     $project: {
                         _id: 0,
-                        phaseV: "$dados.data.dataV.phase",
-                        valueV: "$dados.data.dataV.value",
-                        dateV: "$dados.data.dataV.date",
+                        phaseV: "$data.dataV.phase",
+                        valueV: "$data.dataV.value",
+                        dateV: "$data.dataV.date",
 
                     }
                 }
@@ -210,19 +218,18 @@ router.get('/E/:id_DME', async (req, res) => {
 
     try {
         
-        const dadosE = await Ambiente.aggregate(
+        const dadosE = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
+                activeDME(),
                 filterDME(id_DME),
-                { $unwind: "$dados.data.dataE"},
-                match_date("dados.data.dataE.date",initialDate,finalDate),
+                { $unwind: "$data.dataE"},
+                match_date("data.dataE.date",initialDate,finalDate),
                 {
                     $project: {
                         _id: 0,
-                        phaseE: "$dados.data.dataE.phase",
-                        valueE: "$dados.data.dataE.value",
-                        dateE: "$dados.data.dataE.date",
+                        phaseE: "$data.dataE.phase",
+                        valueE: "$data.dataE.value",
+                        dateE: "$data.dataE.date",
 
                     }
                 }
@@ -251,19 +258,18 @@ router.get('/A/:id_DME', async (req, res) => {
 
     try {
         
-        const dadosA = await Ambiente.aggregate(
+        const dadosA = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
+                activeDME(),
                 filterDME(id_DME),
-                { $unwind: "$dados.data.dataA"},
-                match_date("dados.data.dataA.date",initialDate,finalDate),
+                { $unwind: "$data.dataA"},
+                match_date("data.dataA.date",initialDate,finalDate),
                 {
                     $project: {
                         _id: 0,
-                        phaseA: "$dados.data.dataA.phase",
-                        valueA: "$dados.data.dataA.value",
-                        dateA: "$dados.data.dataA.date",
+                        phaseA: "$data.dataA.phase",
+                        valueA: "$data.dataA.value",
+                        dateA: "$data.dataA.date",
 
                     }
                 }
@@ -293,19 +299,18 @@ router.get('/W/:id_DME', async (req, res) => {
 
     try {
         
-        const dadosW = await Ambiente.aggregate(
+        const dadosW = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
+                activeDME(),
                 filterDME(id_DME),
-                { $unwind: "$dados.data.dataW"},
-                match_date("dados.data.dataW.date",initialDate,finalDate),
+                { $unwind: "$data.dataW"},
+                match_date("data.dataW.date",initialDate,finalDate),
                 {
                     $project: {
                         _id: 0,
-                        phaseW: "$dados.data.dataW.phase",
-                        valueW: "$dados.data.dataW.value",
-                        dateW: "$dados.data.dataW.date",
+                        phaseW: "$data.dataW.phase",
+                        valueW: "$data.dataW.value",
+                        dateW: "$data.dataW.date",
 
                     }
                 }
@@ -348,11 +353,21 @@ function activeDMEandAMB(){
     }
 } 
 
+
+// função para filtrar DMES ativos sem usar o 
+function activeDME(){
+    return {
+        $match: {
+            "active": true
+        }
+    }
+}
+
 // função para filtrar id_DME
 function filterDME(id_DME){
     return {
         $match: {
-            "dados.id_DME": id_DME
+            "id_DME": id_DME
         }
     }
 }
