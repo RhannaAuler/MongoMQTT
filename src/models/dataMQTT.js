@@ -14,6 +14,17 @@ const dadosMedidosSchema = new mongoose.Schema({
         trim: true, // remover espacos em branco da string
         unique: true // id deve ser unico
       },
+      slug: {  // sigla do ambiente, ex: lmm
+        type: String,
+        required: true,
+        lowercase: true,
+        trim: true
+      },
+      ponto: {   // nome do ponto
+        type: String,
+        required: true,
+        lowercase: true
+      },
       data: 
         {  //data é um dicionário para as listas dataV, dataW e dataA
           dataV: [  //dataV é a chave da lista com valor, fase e tempo da ultima tensao

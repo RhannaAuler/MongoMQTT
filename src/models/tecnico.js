@@ -2,6 +2,8 @@
 
 const mongoose = require('mongoose')
 const validator = require('validator')
+const bcrypt = require('bcryptjs')
+
 require('mongoose-type-email');
 
 
@@ -15,13 +17,15 @@ const TecnicoSchema = new mongoose.Schema({
         trim: true // remover espacos em branco da string
       },
       email: { // email para login e notificacoes
-        type: mongoose.SchemaTypes.Email, // modulo verifica se Ã© um email
+        type: mongoose.SchemaTypes.Email, // modulo verifica se é um email
         required: true,
-        lowercase: true
+        lowercase: true,
+        unique: true
       },
       password: {  // senha para login
         type: String,
         required: true,
+        select: false,
       },
       slugAmbiente:{  // ambiente do tecnico
         type: String,
@@ -37,7 +41,16 @@ const TecnicoSchema = new mongoose.Schema({
     {
       timestamps: true
     }
-)
+);
+
+
+//Cria uma encriptação para a senha com 10 rounds
+
+TecnicoSchema.pre('save', async function(next){
+  const hash = await bcrypt.hash(this.password, 10);
+  this.password = hash;
+  next();
+});
 
 const Tecnico = mongoose.model('Tecnico', TecnicoSchema)
 

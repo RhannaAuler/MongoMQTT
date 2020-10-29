@@ -65,21 +65,20 @@ router.get('/peak_current', async (req, res) => {
     }
 
     try {
-        const dados = await Ambiente.aggregate(
+        const dados = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
-                { $unwind: "$dados.data.dataA"},
-                match_date("dados.data.dataA.date",initialDate,finalDate),
-                { $sort: {'dados.data.dataA.value': -1}},
+                activeDME(),
+                { $unwind: "$data.dataA"},
+                match_date("data.dataA.date",initialDate,finalDate),
+                { $sort: {'data.dataA.value': -1}},
                 { $limit: 1},
                 { $project: {
                     _id: 0,
-                        id_DME: "$dados.id_DME",
-                        lab: 1,
+                        id_DME: "$id_DME",
+                        slug: 1,
                         ponto: 1,
-                        value: "$dados.data.dataA.value",
-                        date: "$dados.data.dataA.date"
+                        value: "$data.dataA.value",
+                        date: "$data.dataA.date"
                 }}
 
             ]
@@ -150,20 +149,19 @@ router.get('/energy/lab', async (req, res) => {
 
     const total = await total_energy(initialDate,finalDate)
     try {
-        const dados = await Ambiente.aggregate(
+        const dados = await MQTTdata.aggregate(
         [
-            ...connectAmbienteDME(),
-            activeDMEandAMB(),
-            { $unwind: "$dados.data.dataE"},
-            match_date("dados.data.dataE.date",initialDate,finalDate),
+            activeDME(),
+            { $unwind: "$data.dataE"},
+            match_date("data.dataE.date",initialDate,finalDate),
             {
                 $group: {
                 
-                        _id: "$dados.id_DME",
-                        lab: {$first:"$lab"},
+                        _id: "$id_DME",
+                        lab: {$first:"$slug"},
                         ponto: {$first:"$ponto"},
                         sum_E: {
-                            $sum: "$dados.data.dataE.value"
+                            $sum: "$data.dataE.value"
                         }
                 
                 }
@@ -199,27 +197,26 @@ router.get('/sum/hour', async (req, res) => {
     }
 
     try {
-        const sum = await Ambiente.aggregate(
+        const sum = await MQTTdata.aggregate(
             [
-                ...connectAmbienteDME(),
-                activeDMEandAMB(),
-                { $unwind: "$dados.data.dataW"},
-                match_date("dados.data.dataW.date",initialDate,finalDate),
+                activeDME(),
+                { $unwind: "$data.dataW"},
+                match_date("data.dataW.date",initialDate,finalDate),
                 {
                     $group: {
                         _id: {
-                                id_DME: "$dados.id_DME",  
-                                year: { $year: "$dados.data.dataW.date" },
-                                month: { $month: "$dados.data.dataW.date" },
-                                day: { $dayOfMonth: "$dados.data.dataW.date" },
-                                hour: { $hour: "$dados.data.dataW.date" },
+                                id_DME: "$id_DME",  
+                                year: { $year: "$data.dataW.date" },
+                                month: { $month: "$data.dataW.date" },
+                                day: { $dayOfMonth: "$data.dataW.date" },
+                                hour: { $hour: "$data.dataW.date" },
                                 //minute: { $minute: "$data.dataW.date" }
                                
                         },
-                        lab: {$first:"$lab"},
+                        lab: {$first:"$slug"},
                         ponto: {$first:"$ponto"},
                         w_total: {
-                            $sum: "$dados.data.dataW.value"
+                            $sum: "$data.dataW.value"
                         }
                     }
                 }, 

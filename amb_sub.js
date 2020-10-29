@@ -64,10 +64,22 @@ const MQTTdata = require('./src/models/dataMQTT')
 //     // saved!
 // });
 
-MQTTdata.create({ 
-        id_DME: "1gkj",
-        active: false
-    }, function (err, small) {
+// MQTTdata.create({ 
+//         id_DME: "1gkj",
+//         active: false
+//     }, function (err, small) {
+//         if (err) return handleError(err);
+//         console.log('oi')
+//         // saved!
+// });
+
+MQTTdata.findOneAndUpdate(
+            {id_DME: "1gkj"},
+            {slug: "lme",
+            ponto: "janela"
+        }
+    
+    , function (err, small) {
         if (err) return handleError(err);
         console.log('oi')
         // saved!

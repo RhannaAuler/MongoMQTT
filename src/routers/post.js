@@ -3,14 +3,27 @@ const Tecnico = require('../models/tecnico')
 const Ambiente = require('../models/ambiente')
 const MQTTdata = require('../models/dataMQTT')
 const router = express.Router()
+const bcrypt = require('bcryptjs')
 
 
 // POST DO TECNICO
 
 router.post('/registro_tecnico', async (req, res) => {
 
+    const { email } = req.body
+    
     try {
+
+        if (await Tecnico.findOne({email})){
+            return res.status(400).send({error: 'Email já cadastrado'})
+        }; // Caso o usuario ja esteja cadastrado
+
+
         const tecnico = await Tecnico.create(req.body); // Todos os parametros do esquema estarao dentro de req.body
+
+        //Tecnico.password = undefined; // Para nao voltar a informação de senha, NAO DEU CERTO
+
+
         return res.send({tecnico});
 
 
@@ -29,8 +42,6 @@ router.post('/registro_ambiente', async (req, res) => {
 
     try {
 
-        // Teste
-
         if (await Ambiente.findOne({id_DME: req.body.pontosDeMedicao[0].id_DME})){ //Verifica se existe aquele id_DME
             console.log(req.body.pontosDeMedicao[0].id_DME)
             console.log("ID Existente")
@@ -39,7 +50,11 @@ router.post('/registro_ambiente', async (req, res) => {
             
         else{
             console.log("Nao achou a ID")
-            const datamqtt = await MQTTdata.create({id_DME: req.body.pontosDeMedicao[0].id_DME}); // Cria a nova ID_DME no schema dataMQTT
+            const datamqtt = await MQTTdata.create({
+                                                    id_DME: req.body.pontosDeMedicao[0].id_DME,
+                                                    slug: req.body.slug,
+                                                    ponto: req.body.pontosDeMedicao[0].ponto
+                                                }); // Cria a nova ID_DME no schema dataMQTT
             
             res.send({datamqtt})
 
@@ -104,5 +119,32 @@ router.post('/status_active', async (req, res) => {
     }
      
 })
+
+// POST de LOGIN
+
+
+//lembrar que houve alteracao no schema do tecnico
+// Instalar a biblioteca bcryptjs e importar ele no tecnico.js e no post.js
+
+router.post('/login', async (req, res) => {
+
+    const { email, password } = req.body
+
+    const user = await Tecnico.findOne({ email }).select('+password');
+
+    if (!user){
+        res.status(400).send({error: 'Usuário não encontrado'});
+
+    };
+
+    if (!await bcrypt.compare(password, user.password)){ //Compara se a senha digitada é a mesma senha cadastrada pelo usuario
+        return res.status(400).send({error: 'Senha inválida'})
+    };
+
+    res.send({user});
+     
+})
+
+
 
 module.exports = router
