@@ -95,7 +95,7 @@ router.get('/status_DMEs', async (req, res) => {
                 {
                     $project: { // mostra as informacoes que eu quero
                         _id: 0,
-                        ponto: "$ponto", // Mostra ponto de medição da funcao connectAmbienteDME
+                        lab: "$lab", // Mostra ponto de medição da funcao connectAmbienteDME
                         status: "$dados.active", // Mostra se DME está ou nao habilitado
                         Id_DME: "$_id" // Mostra ID_DME da funcao connectAmbienteDME
                     }
