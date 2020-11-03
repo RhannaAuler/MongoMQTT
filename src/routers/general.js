@@ -84,6 +84,31 @@ router.get('/Lista/DME_Ambiente_PontoMedicao', async (req, res) => {
 
 
 
+// Lista dos DMEs e se estão habilitados ou não
+
+router.get('/status_DMEs', async (req, res) => {
+    
+    try {
+        const Lista = await MQTTdata.aggregate(
+            [  
+                {
+                    $project: { // mostra as informacoes que eu quero
+                        _id: 0,
+                        id_DME: "$id_DME",
+                        status: "$active"
+                    }
+                }
+            ]
+        )
+        return res.send(Lista)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send()
+    }
+
+})
+
+
 
 // EXTRA
 
