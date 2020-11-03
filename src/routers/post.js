@@ -92,7 +92,7 @@ router.post('/status_active', async (req, res) => {
     const {id_DME} = req.body;
     try {
 
-        if (await MQTTdata.findOne({id_DME: req.body.id_DME})){
+        if (await MQTTdata.findOne({id_DME: req.body.id_DME}, 'active')){
             console.log("Achou a ID_DME")
 
 
