@@ -157,7 +157,7 @@ router.get('/last/:id_DME', async (req, res) => {
         )
     } catch (e) {
         console.log(e)
-        res.status(500).send(e)
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
@@ -198,7 +198,7 @@ router.get('/V/:id_DME', async (req, res) => {
         return res.send(dadosV)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
@@ -238,7 +238,7 @@ router.get('/E/:id_DME', async (req, res) => {
         return res.send(dadosE)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
@@ -279,7 +279,7 @@ router.get('/A/:id_DME', async (req, res) => {
         return res.send(dadosA)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
@@ -320,7 +320,7 @@ router.get('/W/:id_DME', async (req, res) => {
         return res.send(dadosW)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 

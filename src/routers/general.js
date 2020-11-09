@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
         )
         return res.send(dados)
     } catch (e) {
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 
         
@@ -32,7 +32,7 @@ router.get('/labs', async (req, res) => {
         const dados = await Ambiente.find({ }, { name: 1, slug: 1, _id: 0 })
         return res.send(dados) // envia dados encontrados como resposta
     } catch (e) { 
-        res.status(500).send() // envia o erro
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
@@ -47,7 +47,7 @@ router.get('/labs/:lab', async (req, res) => {
         }
         res.send(dados)
     } catch(e) {
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }   
 })
 
@@ -77,7 +77,7 @@ router.get('/Lista/DME_Ambiente_PontoMedicao', async (req, res) => {
         return res.send(Lista)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 
 })
@@ -105,7 +105,7 @@ router.get('/status_DMEs', async (req, res) => {
         return res.send(Lista)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 
 })

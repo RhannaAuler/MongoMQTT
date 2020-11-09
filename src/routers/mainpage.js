@@ -46,7 +46,7 @@ router.get('/energy/avg', async (req, res) => {
         )
         return res.send(dados[0])
     } catch (e) {
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
@@ -85,7 +85,7 @@ router.get('/peak_current', async (req, res) => {
         )
         return res.send(dados[0])
     } catch (e) {
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
     
 });
@@ -129,7 +129,7 @@ router.get('/energy/dayOfWeek', async (req, res) => {
         )
         return res.send(dados)
     } catch (e) {
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
@@ -179,7 +179,7 @@ router.get('/energy/lab', async (req, res) => {
     return res.send(dados)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 });
 
@@ -234,7 +234,7 @@ router.get('/sum/hour', async (req, res) => {
         )
         return res.send(sum)
     } catch (e) {
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 });
 
@@ -293,7 +293,7 @@ router.get('/pot_weekday', async (req, res) => {
         return res.send(dados)
     } catch (e) {
         console.log(e)
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 });
 
@@ -338,7 +338,7 @@ router.get('/energy/total', async (req, res) => {
         )
         return res.send(dados[0])
     } catch (e) {
-        res.status(500).send()
+        res.status(401).send({error: 'Falha para obter os dados desejados'})
     }
 })
 
