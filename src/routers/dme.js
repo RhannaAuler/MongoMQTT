@@ -7,20 +7,12 @@ const router = new express.Router()
 // GETS da pagina de modulo
 
 
-//  /:id_DME
-// porcentagem de potencia de cada fase
-// ultimo valor lido da corrente 
-// ultimo valor lido da tensão
-// grafico para cada grandeza com uma curva para cada fase 
-// default: ultimas 24 horas
-
-
-
 // ultima corrente e tensao de cada fase
 // e gráfico pizza com a porcentagem de potência cada fase
 router.get('/last/:id_DME', async (req, res) => {
     const id_DME = req.params.id_DME
 
+    // periodo de tempo default - ultimas 24 horas
     if (!req.query.initialDate || !req.query.finalDate) {
         finalDate = new Date()
         initialDate = new Date(new Date() - 24*60*60 * 1000 )
@@ -35,6 +27,7 @@ router.get('/last/:id_DME', async (req, res) => {
 
     try {
 
+        // card da ultima corrente
         const lastA = await MQTTdata.aggregate(
             [
                 activeDME(),
@@ -72,6 +65,7 @@ router.get('/last/:id_DME', async (req, res) => {
             ]
         )
 
+        // grafico da ultima tensao
         const lastV = await MQTTdata.aggregate(
             [
                 activeDME(),
@@ -108,8 +102,10 @@ router.get('/last/:id_DME', async (req, res) => {
             ]
         )
 
+        // pega total de energia do DME
         const total = await total_power_idDME(id_DME,initialDate,finalDate)
 
+        // grafico do percentual de energia por fase
         const perc = await MQTTdata.aggregate(
             [
                 activeDME(),
@@ -126,8 +122,6 @@ router.get('/last/:id_DME', async (req, res) => {
                         _id: { 
                                 phase: "$data.dataW.phase"
                         },
-                        //lab: {$first:"$lab"},
-                        //ponto: {$first:"$ponto"},
                         sum_W: {
                                 $sum: "$data.dataW.value"
                         }
@@ -138,8 +132,6 @@ router.get('/last/:id_DME', async (req, res) => {
                     $project:{
                         _id: 0,
                         phase: "$_id.phase",
-                        //lab: 1,
-                        //ponto: 1,
                         perc_W: {$round: [{$divide: ["$sum_W",total]}, 2]}
                     }
                 }
@@ -329,7 +321,7 @@ module.exports = router
 
 
 
-// FUNÇÕES
+// FUNÇÕES AUXILIARES
 
 
 // função para filtrar período de tempo
@@ -344,17 +336,8 @@ function match_date(field, initialDate,finalDate){
     }
 }
 
-// função para filtrar DMEs ativos
-function activeDMEandAMB(){
-    return {
-        $match: {
-            "dados.active": true
-        }
-    }
-} 
 
-
-// função para filtrar DMES ativos sem usar o 
+// função para filtrar DMES ativos
 function activeDME(){
     return {
         $match: {
@@ -433,58 +416,3 @@ async function total_power_idDME(id_DME,initialDate,finalDate){
     }
 }
 
-
-// gráfico pizza com a porcentagem de potência cada fase
-//router.get('/power/phase/:id_DME', async (req, res) => {
-    // const id_DME = req.params.id_DME
-
-    // if (!req.query.initialDate || !req.query.finalDate) {
-    //     finalDate = new Date()
-    //     initialDate = new Date(new Date() - 24*60*60 * 1000 )
-    // }
-
-    // else{
-    //     initialDate = (req.query.initialDate)
-    //     finalDate = (req.query.finalDate)
-    // }
-
-    // const total = await total_power_idDME(id_DME)
-    // try {
-    //     const dados = await Ambiente.aggregate(
-    //         [
-    //             ...connectAmbienteDME(),
-    //             activeDMEandAMB(),
-    //             filterDME(id_DME),
-    //             { $unwind: "$dados.data.dataW"},
-    //             match_date("dados.data.dataW.date",initialDate,finalDate),
-    //             {
-    //                 $group: {
-                    
-    //                     _id: { 
-    //                             phase: "$dados.data.dataW.phase"
-    //                     },
-    //                     lab: {$first:"$lab"},
-    //                     ponto: {$first:"$ponto"},
-    //                     sum_W: {
-    //                             $sum: "$dados.data.dataW.value"
-    //                     }
-                    
-    //                 }
-    //             },
-    //             {
-    //                 $project:{
-    //                     _id: 0,
-    //                     phase: "$_id.phase",
-    //                     lab: 1,
-    //                     ponto: 1,
-    //                     perc_W: {$round: [{$divide: ["$sum_W",total]}, 2]}
-    //                 }
-    //             }
-    //         ]
-    //     )
-    //     return res.send(dados)
-    // } catch (e) {
-    //     console.log(e)
-    //     res.status(500).send()
-    // }
-//});

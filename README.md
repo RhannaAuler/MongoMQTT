@@ -19,7 +19,7 @@ node src/index.js
 ```
 
 
-Para rodar a parte de pegar dados do broker e salvar no banco de dados, utilizar o comando
+Para rodar a parte de recebimento de dados do broker e salvamento no banco de dados, utilizar o comando
 
 ```
 node sub.js
