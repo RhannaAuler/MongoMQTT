@@ -299,8 +299,6 @@ router.get('/pot_weekday', async (req, res) => {
 
 
 
-
-
 // energia total consumida por 1 mes
 router.get('/energy/total', async (req, res) => {
 
