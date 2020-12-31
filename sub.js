@@ -1,6 +1,6 @@
 // MQTT subscriber
 var mqtt = require('mqtt')
-var client  = mqtt.connect('mqtt://mqtt.eclipse.org/')
+var client  = mqtt.connect('mqtt://test.mosquitto.org/')
 var topic = 'PI_mqtt'
 
 require('./src/database/mongoose')
@@ -32,13 +32,25 @@ client.on('message', (topic, message) => {
         const messageMQTT = new MQTTdata({
             id_DME: data.id_DME,
             data: {
-                dataV: data.dataV,
-                dataW: data.dataW,
-                dataA: data.dataA,
+                dataV: [{                   
+                      value: data.dataV,
+                      date: data.date,
+                      phase: data.phase
+                }],
+                dataW: [{                   
+                    value: data.dataW,
+                    date: data.date,
+                    phase: data.phase
+                }],
+                dataA: [{                   
+                    value: data.dataA,
+                    date: data.date,
+                    phase: data.phase
+                }],
                 dataE: [{
-                    value: data.dataW[0].value/60000,  //amostragem a cada um minuto, convertendo de W para kWh
-                    date: data.dataW[0].date,
-                    phase: data.dataW[0].phase
+                    value: data.dataW/60000,  //amostragem a cada um minuto, convertendo de W para kWh
+                    date: data.date,
+                    phase: data.phase
                 }]
             }
             
